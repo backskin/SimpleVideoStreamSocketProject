@@ -10,11 +10,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
-import java.awt.image.BufferedImage;
+import java.io.IOException;
 
 
 public class Controller {
-
 
     @FXML
     private TextField portField;
@@ -25,25 +24,14 @@ public class Controller {
     @FXML
     private Button closeButton;
 
-    private Thread serverThread;
     private ServerRunnable runnable;
     private StringProperty newMessageToConsole = new SimpleStringProperty();
     private BooleanProperty serverWorking = new SimpleBooleanProperty();
-    private BooleanProperty drawAnImage = new SimpleBooleanProperty(false);
-    private BufferedImage lastBufferedImg;
-
-    public void askToDraw(BufferedImage bImage){
-        lastBufferedImg = bImage;
-        drawAnImage.setValue(true);
-        drawAnImage.setValue(false);
-    }
 
     @FXML
     private void initialize(){
         newMessageToConsole.addListener((o, old, newVal) -> writeToConsole(newVal));
         serverWorking.addListener((o, old, newVal) -> handleServerStatus(newVal));
-        drawAnImage.addListener((o, old, newVal) -> {if (newVal && lastBufferedImg != null)
-            Loader.showImageInAWindow(lastBufferedImg);});
     }
 
     void setServerWorking(boolean serverWorking) {
@@ -58,8 +46,8 @@ public class Controller {
     private void startServer(int port){
 
         runnable = new ServerRunnable(port,this);
-        serverThread = new Thread(runnable);
-        Platform.runLater(()-> serverThread.start());
+        Thread serverThread = new Thread(runnable);
+        serverThread.start();
     }
 
 
@@ -77,25 +65,30 @@ public class Controller {
     private void handleCloseButton() {
 
         writeToConsole("Попытка завершения работы сервера");
-        runnable.stopServer();
-        openButton.setDisable(false);
-        closeButton.setDisable(true);
-        writeToConsole("Сервер успешно остановлен");
+        Platform.runLater(()-> {
+            if (runnable.stop()) {
+                Platform.runLater(()->{
+                    openButton.setDisable(false);
+                    closeButton.setDisable(true);
+                    writeToConsole("Сервер успешно остановлен");
+                });
+
+            }
+        });
+
     }
     @FXML
     private void handleOpenButton() {
 
         try {
-
             int port = Integer.parseInt(portField.getText());
             writeToConsole("Попытка открыть порт для прослушивания");
 
-            startServer(port);
-
+            Platform.runLater(()->startServer(port));
             handleServerStatus(true);
 
         } catch (NumberFormatException e){
-            AlertHandler.makeError("Ошибка ввода (номер порта)!");
+            AlertHandler.makeError("Ошибка ввода (номер порта)!", Loader.getStage());
         }
     }
 }

@@ -1,6 +1,7 @@
 package backsoft.imgclient;
 
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
@@ -12,12 +13,12 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.Socket;
 import java.rmi.UnknownHostException;
+import java.util.Base64;
 
 public class Controller {
 
     private Socket socket;
-    private BufferedImage bufferedImage;
-    private String ext;
+    private Pair<byte[], File> imageFile;
 
     @FXML
     private Button sendButton;
@@ -43,6 +44,7 @@ public class Controller {
 
         try {
             socket = new Socket(address, port);
+
             return socket.isConnected();
 
         }catch (UnknownHostException e){
@@ -56,29 +58,32 @@ public class Controller {
         return false;
     }
 
-    private boolean sendToServer(BufferedImage image, String extension){
+    private void sendToServer(byte[] content, String name) {
 
-//        Thread microThread = new Thread(()->{});
-//        microThread.start();
         try {
-            DataOutputStream dous = new DataOutputStream(socket.getOutputStream());
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ImageIO.write(bufferedImage, extension, bos);
-            byte[] imageAsByte = bos.toByteArray();
-            dous.writeUTF("image");
-            dous.flush();
-            Thread.sleep(100);
-            dous.write(imageAsByte.length);
-            dous.flush();
-            Thread.sleep(100);
-            dous.write(imageAsByte);
-            dous.flush();
+            DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
+
+            dout.writeUTF("image");
+            dout.flush();
+            Thread.sleep(10);
+
+            dout.writeUTF(name);
+            dout.flush();
+
+            String imgAsString = Base64.getEncoder().encodeToString(content);
+
+            int chunkSize = 4096;
+            int rounds =  (int)Math.ceil(imgAsString.length() / (double)chunkSize);
+            for (int i = 0; i < rounds; i++) {
+                dout.writeUTF(imgAsString.substring(chunkSize * i, Math.min(chunkSize*(i+1), imgAsString.length())));
+                dout.flush();
+            }
+            dout.writeUTF("image-end");
+            dout.flush();
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
-
-        return true;
     }
 
     private void writeToConsole(String data){
@@ -95,11 +100,40 @@ public class Controller {
             String address = ipField.getText();
             int port = Integer.parseInt(portField.getText());
 
-            if (connectToServer(address,port)){
+            if (connectToServer(address,port)) {
                 writeToConsole("Соединение установлено!");
-
                 connectButton.setDisable(true);
                 disconnectButton.setDisable(false);
+                if (imageFile != null) sendButton.setDisable(false);
+
+                Task connectTask = new Task() {
+                    @Override
+                    protected Object call() throws Exception {
+
+                        DataInputStream in = new DataInputStream(socket.getInputStream());
+                        String respond = in.readUTF();
+                        if (respond.equals("close")){
+                            socket.close();
+                            Platform.runLater(()->{
+                                writeToConsole("Связь с сервером прервана");
+                                handleDisconnect();
+                            });
+                        }
+                        if (respond.equals("gotit"))
+                            Platform.runLater(()->AlertHandler.makeInfo(
+                                    "Изображение успешно доставлено!"));
+                        return respond;
+                    }
+                };
+
+                Thread clientThread = new Thread(() -> {
+                    connectTask.run();
+                    while (!socket.isClosed()) {
+                        if (connectTask.isDone()) connectTask.run();
+                    }
+                    connectTask.cancel();
+                });
+                clientThread.start();
             }
             else {
                 socket.close();
@@ -118,9 +152,13 @@ public class Controller {
     private void handleDisconnect() {
 
         try {
-            DataOutputStream dous = new DataOutputStream(socket.getOutputStream());
-            dous.writeUTF("quit");
-            socket.close();
+            if (!socket.isClosed()) {
+                DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
+                dout.writeUTF("quit");
+                dout.flush();
+                socket.close();
+            }
+            writeToConsole("Отключен от сервера");
             connectButton.setDisable(false);
             disconnectButton.setDisable(true);
             sendButton.setDisable(true);
@@ -129,7 +167,7 @@ public class Controller {
         }
     }
 
-    static BufferedImage convertToBuffImage(byte[] imageInByte){
+    private static BufferedImage convertToBuffImage(byte[] imageInByte){
 
         InputStream in = new ByteArrayInputStream(imageInByte);
         BufferedImage bImageFromConvert = null;
@@ -143,28 +181,24 @@ public class Controller {
 
     @FXML
     private void handleChooseImage() {
-       Pair<byte[], String> imageAndPath = FileHandler.openFileAsByteArray();
-       if (imageAndPath != null) {
-           pathField.setText(imageAndPath.getTwo());
-           bufferedImage = convertToBuffImage(imageAndPath.getOne());
-           ext = imageAndPath.getTwo()
-                   .subSequence(imageAndPath.getTwo().lastIndexOf('.'),
-                           imageAndPath.getTwo().length() - 1).toString();
-           imageView.setImage(Loader.convertToFxImage(bufferedImage).getImage());
-           sendButton.setDisable(false);
+       imageFile = FileHandler.openFileAsByteArray();
+       if (imageFile != null) {
+           pathField.setText(imageFile.getTwo().getAbsolutePath());
+           imageView.setImage(Loader.convertToFxImage(convertToBuffImage(imageFile.getOne())).getImage());
+           if (socket.isConnected()) sendButton.setDisable(false);
        }
     }
 
     @FXML
     private void handleSendButton() {
 
-        try {
-           if (sendToServer(bufferedImage, ext)){
-               AlertHandler.makeInfo("Изображение успешно доставлено!");
-           }
-           else AlertHandler.makeInfo("Изображение не было доставлено :(");
-        } catch (Exception e){
-           AlertHandler.makeError("Ошибка при отправке!");
-        }
+        Task sendTask = new Task() {
+            @Override
+            protected Object call() {
+                sendToServer(imageFile.getOne(), imageFile.getTwo().getName());
+                return null;
+            }
+        };
+        sendTask.run();
     }
 }

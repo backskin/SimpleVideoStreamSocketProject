@@ -31,7 +31,7 @@ public class Loader {
             FXMLLoader loader = new FXMLLoader(Loader.class.getResource(fxml + ".fxml"));
             return new Pair<>(loader.load(), loader.getController());
         } catch (IOException e) {
-            AlertHandler.makeError("Системная ошибка при загрузке FXML");
+            AlertHandler.makeError("Системная ошибка при загрузке FXML", primaryStage);
             e.printStackTrace();
             throw new RuntimeException();
         }
@@ -61,15 +61,17 @@ public class Loader {
         return new ImageView(wr);
     }
 
-    public static synchronized void showImageInAWindow(BufferedImage bImage){
+    public static synchronized void showImageInAWindow(String imgName, BufferedImage bImage){
 
         ImageView imageView = convertToFxImage(bImage);
-
+        imageView.setPreserveRatio(true);
+        imageView.setFitWidth(800);
+        imageView.setFitHeight(600);
         Button closeButton = new Button("Закрыть");
         Button saveButton = new Button("Сохранить как");
-        saveButton.setOnAction(event->{});
-        closeButton.setOnAction(event -> {});
+
         HBox buttonsPane = new HBox();
+        buttonsPane.setSpacing(20);
         buttonsPane.getChildren().addAll(saveButton, closeButton);
         buttonsPane.setAlignment(Pos.CENTER);
         VBox vboxPane = new VBox();
@@ -77,20 +79,12 @@ public class Loader {
         VBox.setMargin(imageView, new Insets(16,16,16,16));
 
         Stage imageStage = new Stage();
+        imageStage.setTitle(imgName);
+        saveButton.setOnAction(event->AlertHandler.makeInfo("Зачем?", imageStage));
+        closeButton.setOnAction(event -> imageStage.close());
         imageStage.initModality(Modality.WINDOW_MODAL);
         imageStage.initOwner(primaryStage);
 
         openInAWindow(imageStage, vboxPane, false);
-    }
-
-    public static void saveImageTo(BufferedImage image, String imgname){
-
-        try {
-            ImageIO.write(image, "jpg", new File(imgname + ".jpg"));
-        } catch (IOException e) {
-            AlertHandler.makeError("Cистемная ошибка при загрузке изображения");
-            e.printStackTrace();
-            throw new RuntimeException();
-        }
     }
 }
