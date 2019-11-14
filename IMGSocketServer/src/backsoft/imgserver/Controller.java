@@ -1,15 +1,23 @@
 package backsoft.imgserver;
 
+import backsoft.utils.FileHandler;
+import backsoft.utils.Loader;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.stage.Stage;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+
+import static backsoft.utils.AlertHandler.*;
 
 public class Controller {
 
@@ -21,15 +29,17 @@ public class Controller {
     private TextArea consoleArea;
     @FXML
     private Button closeButton;
+    private Stage stage;
+    void setStage(Stage stage){
+        this.stage = stage;
+    }
 
     private ServerRunnable runnable;
     private Thread serverThread;
-    private StringProperty newMessageToConsole = new SimpleStringProperty();
     private BooleanProperty serverWorking = new SimpleBooleanProperty();
 
     @FXML
     private void initialize(){
-        newMessageToConsole.addListener((o, old, newVal) -> writeToConsole(newVal));
         serverWorking.addListener((o, old, newVal) -> handleServerStatus(newVal));
     }
 
@@ -38,37 +48,47 @@ public class Controller {
         this.serverWorking.set(serverWorking);
     }
 
-    void setNewMessageToConsole(String newMessageToConsole) {
-        this.newMessageToConsole.set(newMessageToConsole);
-    }
-
     private void startServer(int port){
 
         runnable = new ServerRunnable(port,this);
         serverThread = new Thread(runnable);
-        Platform.runLater(serverThread::start);
+        serverThread.start();
     }
 
-
-    private synchronized void writeToConsole(String data){
-        if (!consoleArea.getText().isEmpty()) consoleArea.appendText("\n");
-        consoleArea.appendText(data);
+    synchronized void writeToConsole(String data){
+        Platform.runLater(()->consoleArea.appendText("\n"+data));
     }
 
     private synchronized void handleServerStatus(boolean enable){
-        closeButton.setDisable(!enable);
-        openButton.setDisable(enable);
+        Platform.runLater(()->{
+            closeButton.setDisable(!enable);
+            openButton.setDisable(enable);});
     }
 
     @FXML
-    private void handleCloseButton() {
+    public void handleCloseButton() {
 
         writeToConsole("Попытка завершения работы сервера");
-        serverThread.interrupt();
-        if (runnable.stop()) {
-            handleServerStatus(true);
+        if (serverThread != null){
+            runnable.stop();
+            serverThread.interrupt();
         }
     }
+
+    void showImage(String imageName, BufferedImage image, byte[] source){
+        Platform.runLater(()->{
+            String path = "images"+File.separator+imageName;
+            EventHandler<ActionEvent> handler = event -> {
+                try {
+                    FileHandler.saveFileAs(path, source, stage);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            };
+            Loader.showImageInAWindow(imageName, image, handler);
+        });
+    }
+
     @FXML
     private void handleOpenButton() {
 
@@ -79,7 +99,7 @@ public class Controller {
             handleServerStatus(true);
 
         } catch (NumberFormatException e){
-            AlertHandler.makeError("Ошибка ввода (номер порта)!", Loader.getStage());
+            makeError("Ошибка ввода (номер порта)!", stage);
         }
     }
 }

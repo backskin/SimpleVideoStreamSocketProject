@@ -1,14 +1,17 @@
 package backsoft.imgserver;
 
-import javafx.application.Platform;
-import javax.imageio.ImageIO;
+import backsoft.utils.AlertHandler;
+import backsoft.utils.FileHandler;
+import backsoft.utils.Loader;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
-import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ServerRunnable implements Runnable {
 
@@ -16,15 +19,40 @@ public class ServerRunnable implements Runnable {
     private Controller controller;
     private ServerSocket serverSocket;
     private ArrayList<Socket> currentSockets = new ArrayList<>();
+    private Map<Socket, Thread> currentThreads = new HashMap<>();
 
     class SocketTask implements Runnable {
 
         Socket clientSocket;
-        String command;
+        DataInputStream in;
+        DataOutputStream out;
+        int num;
 
-        SocketTask(Socket client){
+        SocketTask(Socket client) throws IOException {
             super();
             clientSocket = client;
+            num = currentSockets.indexOf(clientSocket)+1;
+            in = new DataInputStream(clientSocket.getInputStream());
+            out = new DataOutputStream(clientSocket.getOutputStream());
+        }
+
+        private void handleImageReceive() throws IOException {
+            controller.writeToConsole("Клиент "+num+" передаёт изображение...");
+            String filename = in.readUTF();
+
+            byte[] bytes = FileHandler.readBytesFromBase64("image-end", in);
+            BufferedImage bImage = Loader.convertToBuffImage(bytes);
+
+            controller.writeToConsole("От клиента " +num+" получено изображение - " + filename);
+            out.writeUTF("gotit");
+            out.flush();
+            controller.showImage(filename, bImage, bytes);
+        }
+
+        private void handleQuit() throws IOException {
+            controller.writeToConsole("Клиент " + num + " запрашивает выход...");
+            currentSockets.remove(clientSocket);
+            clientSocket.close();
         }
 
         @Override
@@ -32,47 +60,23 @@ public class ServerRunnable implements Runnable {
 
             while (!clientSocket.isClosed()) {
                 try {
-                    DataInputStream in = new DataInputStream(clientSocket.getInputStream());
-                    command = in.readUTF();
-                    if (command.equals("image")) {
-                        String filename = in.readUTF();
-                        BufferedImage bImage = readImageFromClient(clientSocket, filename, in);
-                        controller.setNewMessageToConsole("ОтКлиента "
-                                +(currentSockets.indexOf(clientSocket)+1)
-                                +" получено изображение - \n" + filename);
-                        Platform.runLater(() -> Loader.showImageInAWindow(filename, bImage));
-
-                        DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
-                        out.writeUTF("gotit");
-                        out.flush();
-                    }
-
-                    if (command.equals("quit")) {
-                        int num = currentSockets.indexOf(clientSocket)+1;
-                        controller.setNewMessageToConsole("Клиент " + num + " запрашивает выход...");
-
-                        currentSockets.remove(clientSocket);
-                        clientSocket.close();
-                        controller.setNewMessageToConsole("Клиент " + num + " отключён");
-                    }
+                    String command = in.readUTF();
+                    if (command.equals("image")) handleImageReceive();
+                    if (command.equals("quit")) handleQuit();
+                } catch (EOFException ignored) {
                 } catch (IOException e) {
-                    Platform.runLater(() ->
-                            AlertHandler.makeError(
-                                    "Ошибка при работе с клиентом. Соединение остановлено.\n"
-                                            + e.getLocalizedMessage(),
-                                    Loader.getStage()
-                            ));
+                    e.printStackTrace();
                     try {
-                        currentSockets.remove(clientSocket);
                         clientSocket.close();
                     } catch (IOException ex) {
-                        Platform.runLater(() -> AlertHandler.makeError(e.getLocalizedMessage(), Loader.getStage()));
+                        ex.printStackTrace();
                     }
+                    AlertHandler.makeInfo(
+                            "Ошибка при работе с клиентом "+num+". Соединение остановлено.",
+                            null);
                 }
             }
-
-            currentSockets.remove(clientSocket);
-            controller.setNewMessageToConsole("Соединение с клиентом закрыто");
+            controller.writeToConsole("Клиент "+num+" отсоединился");
         }
     }
 
@@ -81,29 +85,26 @@ public class ServerRunnable implements Runnable {
         this.controller = controller;
     }
 
-   boolean stop() {
+   void stop() {
        try {
-           for (Socket sock : currentSockets) {
-               if (sock.isConnected()) {
+           for (Thread th : currentThreads.values()){
+               th.interrupt();
+           }
+           for (int i = 0; i < currentSockets.size(); i++) {
+               Socket sock = currentSockets.get(i);
+               if (!sock.isClosed()) {
                    DataOutputStream out = new DataOutputStream(sock.getOutputStream());
                    out.writeUTF("close");
+                   controller.writeToConsole("Клиент "+(i+1)+" отключён");
                    out.flush();
-                   sock.close();
                }
            }
            currentSockets.clear();
-           Platform.runLater(()-> {
-               try {
-                   serverSocket.close();
-               } catch (IOException e) {
-                   e.printStackTrace();
-               }
-           });
-           return true;
+           serverSocket.close();
        } catch (IOException e) {
-           Platform.runLater(() -> AlertHandler.makeError("Сервер не остановлен. Ошибка:\n"
-                   + e.getLocalizedMessage(), Loader.getStage()));
-           return false;
+           AlertHandler.makeError("Сервер не остановлен. Ошибка:\n"
+                   +e.getLocalizedMessage(),null);
+           e.printStackTrace();
        }
    }
 
@@ -113,68 +114,25 @@ public class ServerRunnable implements Runnable {
             serverSocket = new ServerSocket(port);
             serverSocket.setSoTimeout(180000);
             controller.setServerWorking(true);
-            controller.setNewMessageToConsole("Ожидание подключения новых клиентов...");
+            controller.writeToConsole("Ожидание подключения новых клиентов...");
 
             while (!serverSocket.isClosed()) {
                 Socket clientSocket = serverSocket.accept();
                 currentSockets.add(clientSocket);
 
                 if (clientSocket.isConnected()) {
-                    controller.setNewMessageToConsole("Клиент "+currentSockets.size()+" подключился!");
-                    Thread thread = new Thread(new SocketTask(clientSocket));
-                    thread.start();
+                    currentThreads.put(clientSocket, new Thread(new SocketTask(clientSocket)));
+                    currentThreads.get(clientSocket).start();
+                    controller.writeToConsole("Клиент "+currentSockets.size()+" подключился!");
                 }
             }
-            controller.setServerWorking(false);
-
-        } catch (SocketException e){
-            Platform.runLater(()->controller.setNewMessageToConsole(
-                    "Сервер остановлен"));
+        } catch (SocketException ignored) {
+        } catch (SocketTimeoutException te){
+            controller.writeToConsole("Время ожидание сервера истекло");
         }
         catch (IOException e) {
-            controller.setServerWorking(false);
-            e.printStackTrace();
+            AlertHandler.makeError("Ошибка при работе сервера:\n"+e.getLocalizedMessage(), null);
         }
-    }
-
-    private static File saveAsFile(String filepath, byte[] fileByte) throws IOException {
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(fileByte);
-        File imageFile = new File(filepath);
-        OutputStream out = new FileOutputStream(imageFile);
-        byte[] bytes = new byte[16*1024];
-        int count;
-        while ((count = bais.read(bytes)) > 0) {
-            out.write(bytes, 0, count);
-        }
-        return imageFile;
-    }
-
-
-    private BufferedImage readImageFromClient(Socket clientSocket, String filename, DataInputStream in) throws IOException {
-        controller.setNewMessageToConsole("Клиент"+(currentSockets.indexOf(clientSocket)+1)+" передаёт изображение...");
-        File imageFile = new File("images"+File.separator+filename);
-        if (!imageFile.exists()) imageFile.getParentFile().mkdir();
-
-        StringBuilder imgAsString = new StringBuilder();
-        String utf = in.readUTF();
-        while (!utf.equals("image-end")){
-            imgAsString.append(utf);
-            utf = in.readUTF();
-        }
-        byte[] fileByte = Base64.getDecoder().decode(imgAsString.toString());
-        File file = saveAsFile(imageFile.getPath(), fileByte);
-        return  readBuffImage(file);
-    }
-
-    private static BufferedImage readBuffImage(File imageFile){
-
-        BufferedImage bImageFromConvert = null;
-        try {
-            bImageFromConvert = ImageIO.read(imageFile);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bImageFromConvert;
+        controller.setServerWorking(false);
     }
 }

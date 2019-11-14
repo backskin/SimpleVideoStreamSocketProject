@@ -1,14 +1,17 @@
-package backsoft.imgserver;
+package backsoft.utils;
 
+import javafx.embed.swing.SwingFXUtils;
+import javafx.event.ActionEvent;
+import javafx.event.Event;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.image.PixelWriter;
-import javafx.scene.image.WritableImage;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -16,29 +19,24 @@ import javafx.stage.Stage;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
 import java.io.*;
+import java.net.URL;
 
 public class Loader {
 
-    private static Stage primaryStage;
-    public static Stage getStage(){
-        return primaryStage;
-    }
-
-    public static <T> Pair<Parent, T> loadFXML(String fxml) {
+    public static <T> Pair<Parent, T> loadFXML(URL url) {
         try {
-            FXMLLoader loader = new FXMLLoader(Loader.class.getResource(fxml + ".fxml"));
+            FXMLLoader loader = new FXMLLoader(url);
             return new Pair<>(loader.load(), loader.getController());
         } catch (IOException e) {
-            AlertHandler.makeError("Системная ошибка при загрузке FXML", primaryStage);
+            AlertHandler.makeError("Системная ошибка при загрузке FXML", null);
             e.printStackTrace();
             throw new RuntimeException();
         }
     }
 
     public static void openInAWindow(Stage stage, Parent parent, boolean resizable){
-        if (primaryStage == null) primaryStage = stage;
+
         stage.setResizable(resizable);
         stage.setScene(new Scene(parent));
         stage.show();
@@ -46,27 +44,29 @@ public class Loader {
         stage.setMinWidth(stage.getWidth());
     }
 
-    public static ImageView convertToFxImage(BufferedImage image) {
+    public static BufferedImage convertToBuffImage(byte[] imageInByte){
 
-        WritableImage wr = null;
-        if (image != null) {
-            wr = new WritableImage(image.getWidth(), image.getHeight());
-            PixelWriter pixelWriter = wr.getPixelWriter();
-            for (int x = 0; x < image.getWidth(); x++) {
-                for (int y = 0; y < image.getHeight(); y++) {
-                    pixelWriter.setArgb(x, y, image.getRGB(x, y));
-                }
-            }
+        InputStream in = new ByteArrayInputStream(imageInByte);
+        BufferedImage bImageFromConvert = null;
+        try {
+            bImageFromConvert = ImageIO.read(in);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return new ImageView(wr);
+        return bImageFromConvert;
     }
 
-    public static synchronized void showImageInAWindow(String imgName, BufferedImage bImage){
+    public static Image convertToFxImage(BufferedImage image) {
 
-        ImageView imageView = convertToFxImage(bImage);
+        return SwingFXUtils.toFXImage(image, null);
+    }
+
+    public static synchronized void showImageInAWindow(String imgName, BufferedImage bImage, EventHandler<ActionEvent> saveEvent){
+
+        ImageView imageView = new ImageView(SwingFXUtils.toFXImage(bImage, null));
         imageView.setPreserveRatio(true);
         imageView.setFitWidth(800);
-        imageView.setFitHeight(600);
+        imageView.setFitHeight(540);
         Button closeButton = new Button("Закрыть");
         Button saveButton = new Button("Сохранить как");
 
@@ -80,10 +80,8 @@ public class Loader {
 
         Stage imageStage = new Stage();
         imageStage.setTitle(imgName);
-        saveButton.setOnAction(event->AlertHandler.makeInfo("Зачем?", imageStage));
+        saveButton.setOnAction(saveEvent);
         closeButton.setOnAction(event -> imageStage.close());
-        imageStage.initModality(Modality.WINDOW_MODAL);
-        imageStage.initOwner(primaryStage);
 
         openInAWindow(imageStage, vboxPane, false);
     }

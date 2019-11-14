@@ -1,4 +1,4 @@
-package backsoft.imgserver;
+package backsoft.utils;
 
 import java.io.Serializable;
 
