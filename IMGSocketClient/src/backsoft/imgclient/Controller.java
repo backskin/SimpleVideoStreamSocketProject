@@ -136,10 +136,10 @@ public class Controller {
     }
 
     @FXML
-    private void handleDisconnect() {
+    public void handleDisconnect() {
 
         try {
-            if (!socket.isClosed()) {
+            if (socket != null && !socket.isClosed() && socket.isConnected()) {
                 clientThread.interrupt();
                 DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
                 dout.writeUTF("quit");

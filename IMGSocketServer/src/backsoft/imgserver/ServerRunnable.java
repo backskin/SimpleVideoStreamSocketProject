@@ -26,31 +26,35 @@ public class ServerRunnable implements Runnable {
         Socket clientSocket;
         DataInputStream in;
         DataOutputStream out;
-        int num;
 
         SocketTask(Socket client) throws IOException {
             super();
             clientSocket = client;
-            num = currentSockets.indexOf(clientSocket)+1;
             in = new DataInputStream(clientSocket.getInputStream());
             out = new DataOutputStream(clientSocket.getOutputStream());
         }
 
         private void handleImageReceive() throws IOException {
-            controller.writeToConsole("Клиент "+num+" передаёт изображение...");
+            controller.writeToConsole("Клиент "
+                    + clientSocket.getRemoteSocketAddress()
+                    + " передаёт изображение...");
             String filename = in.readUTF();
 
             byte[] bytes = FileHandler.readBytesFromBase64("image-end", in);
             BufferedImage bImage = Loader.convertToBuffImage(bytes);
 
-            controller.writeToConsole("От клиента " +num+" получено изображение - " + filename);
+            controller.writeToConsole("От клиента "
+                    + clientSocket.getRemoteSocketAddress()
+                    + " получено изображение - " + filename);
             out.writeUTF("gotit");
             out.flush();
             controller.showImage(filename, bImage, bytes);
         }
 
         private void handleQuit() throws IOException {
-            controller.writeToConsole("Клиент " + num + " запрашивает выход...");
+            controller.writeToConsole("Клиент "
+                    + clientSocket.getRemoteSocketAddress()
+                    + " запрашивает выход...");
             currentSockets.remove(clientSocket);
             clientSocket.close();
         }
@@ -63,7 +67,7 @@ public class ServerRunnable implements Runnable {
                     String command = in.readUTF();
                     if (command.equals("image")) handleImageReceive();
                     if (command.equals("quit")) handleQuit();
-                } catch (EOFException ignored) {
+                } catch (SocketException | EOFException ignored) {
                 } catch (IOException e) {
                     e.printStackTrace();
                     try {
@@ -72,11 +76,15 @@ public class ServerRunnable implements Runnable {
                         ex.printStackTrace();
                     }
                     AlertHandler.makeInfo(
-                            "Ошибка при работе с клиентом "+num+". Соединение остановлено.",
+                            "Ошибка при работе с клиентом " +
+                                    clientSocket.getRemoteSocketAddress()+
+                                    ". Соединение остановлено.",
                             null);
                 }
             }
-            controller.writeToConsole("Клиент "+num+" отсоединился");
+            controller.writeToConsole("Клиент "
+                    + clientSocket.getRemoteSocketAddress()
+                    + " отсоединился");
         }
     }
 
@@ -90,17 +98,16 @@ public class ServerRunnable implements Runnable {
            for (Thread th : currentThreads.values()){
                th.interrupt();
            }
-           for (int i = 0; i < currentSockets.size(); i++) {
-               Socket sock = currentSockets.get(i);
-               if (!sock.isClosed()) {
+           for (Socket sock : currentSockets) {
+               if (!sock.isClosed() && sock.isConnected()) {
                    DataOutputStream out = new DataOutputStream(sock.getOutputStream());
                    out.writeUTF("close");
-                   controller.writeToConsole("Клиент "+(i+1)+" отключён");
+                   controller.writeToConsole("Клиент " + sock.getRemoteSocketAddress() + " отключён");
                    out.flush();
                }
            }
            currentSockets.clear();
-           serverSocket.close();
+           if (serverSocket != null) serverSocket.close();
        } catch (IOException e) {
            AlertHandler.makeError("Сервер не остановлен. Ошибка:\n"
                    +e.getLocalizedMessage(),null);
@@ -123,7 +130,9 @@ public class ServerRunnable implements Runnable {
                 if (clientSocket.isConnected()) {
                     currentThreads.put(clientSocket, new Thread(new SocketTask(clientSocket)));
                     currentThreads.get(clientSocket).start();
-                    controller.writeToConsole("Клиент "+currentSockets.size()+" подключился!");
+                    controller.writeToConsole("Клиент "
+                            + clientSocket.getRemoteSocketAddress()
+                            + " подключился!");
                 }
             }
         } catch (SocketException ignored) {

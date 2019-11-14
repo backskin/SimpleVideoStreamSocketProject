@@ -12,9 +12,13 @@ public class ClientApp extends Application {
     public void start(Stage primaryStage) {
 
         primaryStage.setTitle("IMGSocketClient");
-        primaryStage.setOnCloseRequest(event->System.exit(0));
+
         Pair<Parent, Controller> fxmlData = Loader.loadFXML(this.getClass().getResource("client.fxml"));
         fxmlData.getTwo().setStage(primaryStage);
+        primaryStage.setOnCloseRequest(event->{
+            fxmlData.getTwo().handleDisconnect();
+            System.exit(0);
+        });
         Loader.openInAWindow(primaryStage, fxmlData.getOne(), false);
     }
 
