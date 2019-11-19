@@ -44,6 +44,8 @@ public class Controller {
     private Button connectButton;
     @FXML
     private Button disconnectButton;
+    @FXML
+    private Button chooseImageButton;
 
     private void connectToServer(String address, int port) {
 
@@ -76,9 +78,15 @@ public class Controller {
         th.start();
     }
 
+    private void blockRightSide(boolean block){
+        sendButton.setDisable(block);
+        chooseImageButton.setDisable(block);
+        pathField.setDisable(block);
+    }
+
     private void sendToServer() {
 
-        Platform.runLater(()->sendButton.setDisable(true));
+        Platform.runLater(()->blockRightSide(true));
 
         try {
             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
@@ -113,13 +121,14 @@ public class Controller {
                         handleDisconnect();
                     }
                     if (respond.equals("gotit")) {
-                        sendButton.setDisable(false);
+                        blockRightSide(false);
                         AlertHandler.makeInfo(
                                 "Изображение успешно доставлено!", stage);
                     }
                 }
             } catch (IOException e) {
                 Controller.this.writeToConsole("Связь с сервером прервана");
+                handleDisconnect();
             }
         };
 
@@ -154,12 +163,14 @@ public class Controller {
                 socket.close();
             }
             writeToConsole("Отключен от сервера");
-            connectButton.setDisable(false);
-            disconnectButton.setDisable(true);
-            sendButton.setDisable(true);
         } catch (IOException e) {
-            e.printStackTrace();
+            writeToConsole("Ошибка отсоединения:");
+            writeToConsole(e.getLocalizedMessage());
         }
+        connectButton.setDisable(false);
+        disconnectButton.setDisable(true);
+        sendButton.setDisable(true);
+        chooseImageButton.setDisable(false);
     }
 
     @FXML
