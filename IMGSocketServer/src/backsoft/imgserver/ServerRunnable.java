@@ -39,9 +39,9 @@ public class ServerRunnable implements Runnable {
                     + clientSocket.getRemoteSocketAddress()
                     + " передаёт изображение...");
             String filename = in.readUTF();
-
-            byte[] bytes = FileHandler.readBytesFromBase64("image-end", in);
-            FileHandler.saveToFile(filename, bytes);
+            controller.visualiseChunksField(true);
+            byte[] bytes = FileHandler.readBytesFromBase64("image-end", in, controller.chunksProperty());
+            FileHandler.saveToFile("temp" + File.separator + filename, bytes);
             BufferedImage bImage = Loader.convertToBuffImage(bytes);
 
             controller.writeToConsole("От клиента "
@@ -50,6 +50,7 @@ public class ServerRunnable implements Runnable {
             out.writeUTF("gotit");
             out.flush();
             if (bImage != null) controller.showImage(filename, bImage, bytes);
+            controller.visualiseChunksField(false);
         }
 
         private void handleQuit() throws IOException {

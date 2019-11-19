@@ -1,4 +1,6 @@
 package backsoft.utils;
+import javafx.application.Platform;
+import javafx.beans.property.IntegerProperty;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -31,14 +33,17 @@ public class FileHandler {
         }
     }
 
-    public static byte[] readBytesFromBase64(String stopWord, DataInputStream in) throws IOException {
+    public static byte[] readBytesFromBase64(String stopWord, DataInputStream in, IntegerProperty chunks) throws IOException {
 
         StringBuilder imgAsString = new StringBuilder();
         String utf = in.readUTF();
         while (!utf.equals(stopWord)){
+            if (chunks != null)
+                Platform.runLater(()->chunks.setValue(chunks.getValue()+1));
             imgAsString.append(utf);
             utf = in.readUTF();
         }
+        if (chunks != null) Platform.runLater(()->chunks.setValue(0));
         return Base64.getDecoder().decode(imgAsString.toString());
     }
 

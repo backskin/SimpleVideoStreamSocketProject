@@ -4,7 +4,9 @@ import backsoft.utils.FileHandler;
 import backsoft.utils.Loader;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -29,7 +31,19 @@ public class Controller {
     private TextArea consoleArea;
     @FXML
     private Button closeButton;
+    @FXML
+    private TextField chunksField;
+    private IntegerProperty chunks = new SimpleIntegerProperty(0);
     private Stage stage;
+
+    public IntegerProperty chunksProperty() {
+        return chunks;
+    }
+
+    public void visualiseChunksField(boolean visible){
+        Platform.runLater(()->chunksField.setVisible(visible));
+    }
+
     void setStage(Stage stage){
         this.stage = stage;
     }
@@ -40,6 +54,7 @@ public class Controller {
 
     @FXML
     private void initialize(){
+        chunksField.textProperty().bind(chunks.asString());
         serverWorking.addListener((o, old, newVal) -> handleServerStatus(newVal));
     }
 

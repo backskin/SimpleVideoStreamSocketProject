@@ -78,6 +78,8 @@ public class Controller {
 
     private void sendToServer() {
 
+        Platform.runLater(()->sendButton.setDisable(true));
+
         try {
             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
 
@@ -110,8 +112,11 @@ public class Controller {
                         in.close();
                         handleDisconnect();
                     }
-                    if (respond.equals("gotit")) AlertHandler.makeInfo(
-                            "Изображение успешно доставлено!", stage);
+                    if (respond.equals("gotit")) {
+                        sendButton.setDisable(false);
+                        AlertHandler.makeInfo(
+                                "Изображение успешно доставлено!", stage);
+                    }
                 }
             } catch (IOException e) {
                 Controller.this.writeToConsole("Связь с сервером прервана");
