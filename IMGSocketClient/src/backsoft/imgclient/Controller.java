@@ -164,7 +164,7 @@ public class Controller {
            pathField.setText(imageFile.getTwo().getAbsolutePath());
            if (socket.isConnected()) sendButton.setDisable(false);
            Image preview = convertToFxImage(convertToBuffImage(imageFile.getOne()));
-           if (preview != null) imageView.setImage(preview);
+           if (preview != null){ imageView.setImage(preview);}
        }
     }
 

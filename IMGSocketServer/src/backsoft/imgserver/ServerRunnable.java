@@ -49,7 +49,7 @@ public class ServerRunnable implements Runnable {
                     + " получено изображение - " + filename);
             out.writeUTF("gotit");
             out.flush();
-            controller.showImage(filename, bImage, bytes);
+            if (bImage != null) controller.showImage(filename, bImage, bytes);
         }
 
         private void handleQuit() throws IOException {

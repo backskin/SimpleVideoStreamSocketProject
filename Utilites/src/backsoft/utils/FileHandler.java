@@ -60,7 +60,7 @@ public class FileHandler {
 
         String imgAsString = Base64.getEncoder().encodeToString(bytes);
 
-        int chunkSize = 4096;
+        int chunkSize = 128;
         while (!"".equals(imgAsString)){
             int endIndex = Math.min(chunkSize, imgAsString.length());
             out.writeUTF(imgAsString.substring(0,endIndex));
