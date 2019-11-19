@@ -41,6 +41,7 @@ public class ServerRunnable implements Runnable {
             String filename = in.readUTF();
 
             byte[] bytes = FileHandler.readBytesFromBase64("image-end", in);
+            FileHandler.saveToFile(filename, bytes);
             BufferedImage bImage = Loader.convertToBuffImage(bytes);
 
             controller.writeToConsole("От клиента "
