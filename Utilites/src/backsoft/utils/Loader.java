@@ -58,7 +58,7 @@ public class Loader {
 
     public static Image convertToFxImage(BufferedImage image) {
 
-        return SwingFXUtils.toFXImage(image, null);
+        return image == null ? null : SwingFXUtils.toFXImage(image, null);
     }
 
     public static synchronized void showImageInAWindow(String imgName, BufferedImage bImage, EventHandler<ActionEvent> saveEvent){

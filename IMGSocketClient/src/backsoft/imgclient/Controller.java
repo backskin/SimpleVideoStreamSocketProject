@@ -6,6 +6,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -161,8 +162,9 @@ public class Controller {
        imageFile = openFile(stage);
        if (imageFile != null) {
            pathField.setText(imageFile.getTwo().getAbsolutePath());
-           imageView.setImage(convertToFxImage(convertToBuffImage(imageFile.getOne())));
            if (socket.isConnected()) sendButton.setDisable(false);
+           Image preview = convertToFxImage(convertToBuffImage(imageFile.getOne()));
+           if (preview != null) imageView.setImage(preview);
        }
     }
 
