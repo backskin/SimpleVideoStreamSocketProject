@@ -1,9 +1,11 @@
 package backsoft.videoclient;
 
 import backsoft.utils.AlertHandler;
+import backsoft.utils.Loader;
 import backsoft.utils.Streamer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
@@ -26,16 +28,33 @@ import static backsoft.utils.Loader.*;
 
 public class Controller {
 
+
     private Socket socket;
     private Pair<byte[], File> imageFile;
     private Thread clientThread;
     private Stage stage;
-    void setStage(Stage stage){
+    private Scene mainScene;
+    private Scene videoScene;
+    private Scene imageScene;
+    private Pair<Double, Double> winSize = new Pair<>(.0,.0);
+
+    void setStageAndScene(Stage stage, Scene scene){
         this.stage = stage;
+        mainScene = scene;
+        winSize = new Pair<>(mainScene.getHeight(), mainScene.getWidth());
+        videoScene = new Scene(Loader.loadChildrenFXML(
+                this.getClass().getResource("videoWindow.fxml"), this));
+
+        imageScene = new Scene(Loader.loadChildrenFXML(
+                this.getClass().getResource("imageWindow.fxml"), this));
     }
 
     @FXML
     private Button sendButton;
+    @FXML
+    private ImageView videoButton;
+    @FXML
+    private Button photoButton;
     @FXML
     private TextField pathField;
     @FXML
@@ -94,6 +113,8 @@ public class Controller {
 
         Platform.runLater(()->blockRightSide(true));
 
+        writeToConsole("Отправление изображения на сервер...");
+
         try {
             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
 
@@ -135,6 +156,7 @@ public class Controller {
                     }
                     if (response.equals(imageSignal.get(CORRECT))) {
                         blockRightSide(false);
+                        writeToConsole("Сервер успешно получил изображение без потерь");
                         AlertHandler.makeInfo(
                                 "Изображение успешно доставлено!", stage);
                     }
@@ -168,7 +190,7 @@ public class Controller {
 
         try {
 
-            if (clientThread.isAlive())
+            if (clientThread != null && clientThread.isAlive())
                 clientThread.interrupt();
 
             if (socket != null && !socket.isClosed() && socket.isConnected()) {
@@ -195,7 +217,7 @@ public class Controller {
        imageFile = openFile(stage);
        if (imageFile != null) {
            pathField.setText(imageFile.getTwo().getAbsolutePath());
-           if (socket.isConnected()) sendButton.setDisable(false);
+           if (socket != null && socket.isConnected()) sendButton.setDisable(false);
            Image preview = convertToFxImage(convertToBuffImage(imageFile.getOne()));
            if (preview != null){ imageView.setImage(preview);}
        }
@@ -206,5 +228,27 @@ public class Controller {
 
         Thread sendThread = new Thread(this::sendImageToServer);
         sendThread.start();
+    }
+
+    @FXML
+    public void handlePhotoButton() {
+
+        stage.setScene(imageScene);
+        stage.setHeight(winSize.getOne());
+        stage.setWidth(winSize.getTwo());
+    }
+
+    @FXML
+    public void handleVideoButton() {
+
+        stage.setScene(videoScene);
+    }
+
+    @FXML
+    public void handleBackToMain() {
+
+        stage.setScene(mainScene);
+        stage.setHeight(winSize.getOne());
+        stage.setWidth(winSize.getTwo());
     }
 }

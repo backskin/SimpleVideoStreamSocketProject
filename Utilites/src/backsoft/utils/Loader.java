@@ -14,6 +14,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -33,10 +34,23 @@ public class Loader {
         }
     }
 
-    public static void openInAWindow(Stage stage, Parent parent, boolean resizable){
+    public static<T> Parent loadChildrenFXML(URL url, T superController) {
+        try {
+            FXMLLoader loader = new FXMLLoader();
+            loader.setController(superController);
+            loader.setLocation(url);
+            return loader.load();
+        } catch (IOException e) {
+            AlertHandler.makeError("Системная ошибка при загрузке FXML", null);
+            e.printStackTrace();
+            throw new RuntimeException();
+        }
+    }
+
+    public static void openInAWindow(Stage stage, Scene scene, boolean resizable){
 
         stage.setResizable(resizable);
-        stage.setScene(new Scene(parent));
+        stage.setScene(scene);
         stage.show();
         stage.setMinHeight(stage.getHeight());
         stage.setMinWidth(stage.getWidth());
@@ -81,6 +95,6 @@ public class Loader {
         saveButton.setOnAction(saveEvent);
         closeButton.setOnAction(event -> imageStage.close());
 
-        openInAWindow(imageStage, vboxPane, false);
+        openInAWindow(imageStage, new Scene(vboxPane), false);
     }
 }

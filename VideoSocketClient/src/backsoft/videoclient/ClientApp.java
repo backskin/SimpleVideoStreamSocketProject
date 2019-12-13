@@ -4,6 +4,7 @@ import backsoft.utils.Loader;
 import backsoft.utils.Pair;
 import javafx.application.Application;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.stage.Stage;
 
 public class ClientApp extends Application {
@@ -13,13 +14,14 @@ public class ClientApp extends Application {
 
         primaryStage.setTitle("VideoSocketClient");
 
-        Pair<Parent, Controller> fxmlData = Loader.loadFXML(this.getClass().getResource("client.fxml"));
-        fxmlData.getTwo().setStage(primaryStage);
+        Pair<Parent, Controller> fxmlData = Loader.loadFXML(this.getClass().getResource("mainWindow.fxml"));
+        Scene mainScene = new Scene(fxmlData.getOne());
+        fxmlData.getTwo().setStageAndScene(primaryStage, mainScene);
         primaryStage.setOnCloseRequest(event->{
             fxmlData.getTwo().handleDisconnect();
             System.exit(0);
         });
-        Loader.openInAWindow(primaryStage, fxmlData.getOne(), false);
+        Loader.openInAWindow(primaryStage, mainScene, false);
     }
 
     public static void main(String[] args) {

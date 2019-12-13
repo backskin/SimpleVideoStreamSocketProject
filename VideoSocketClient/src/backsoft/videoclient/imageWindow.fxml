@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Rectangle2D?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="360.0" prefWidth="450.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1">
+   <Button layoutX="14.0" layoutY="9.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handleBackToMain" prefHeight="25.0" prefWidth="75.0" text="Назад">
+      <graphic>
+         <ImageView fitHeight="17.0" fitWidth="34.0" opacity="0.61" pickOnBounds="true" preserveRatio="true">
+            <image>
+               <Image url="@resources/back-arrow.png" />
+            </image>
+         </ImageView>
+      </graphic>
+   </Button>
+   <TextField fx:id="pathField" editable="false" layoutX="98.0" layoutY="10.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="25.0" prefWidth="300.0" promptText="Путь к файлу" />
+   <Button fx:id="chooseImageButton" layoutX="404.0" layoutY="10.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handleChooseImage" prefHeight="25.0" prefWidth="30.0" text="..." />
+   <Button fx:id="sendButton" defaultButton="true" disable="true" layoutX="169.0" layoutY="316.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handleSendButton" prefHeight="37.0" prefWidth="120.0" text="Отправить">
+      <graphic>
+         <ImageView fitHeight="29.0" fitWidth="32.0" opacity="0.89" pickOnBounds="true" preserveRatio="true">
+            <image>
+               <Image url="@resources/send-arrow.png" />
+            </image>
+         </ImageView>
+      </graphic></Button>
+   <Label alignment="CENTER" layoutX="134.0" layoutY="159.0" text="# Предпросмотр изображения #" textAlignment="CENTER" textFill="#969696">
+      <font>
+         <Font name="System Italic" size="12.0" />
+      </font></Label>
+   <StackPane layoutX="13.0" layoutY="43.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="255.0" prefWidth="425.0">
+      <children>
+         <ImageView fx:id="imageView" fitHeight="257.0" fitWidth="426.0" pickOnBounds="true" preserveRatio="true">
+            <viewport>
+               <Rectangle2D />
+            </viewport>
+         </ImageView>
+      </children>
+   </StackPane>
+   <Separator layoutX="14.0" layoutY="304.0" prefHeight="6.0" prefWidth="424.0" />
+</AnchorPane>

@@ -55,12 +55,11 @@ public class Controller {
     @FXML
     private void initialize(){
         chunksField.textProperty().bind(chunks.asString());
-        serverWorking.addListener((o, old, newVal) -> handleServerStatus(newVal));
     }
 
     void setServerWorking(boolean serverWorking) {
         writeToConsole("Сервер " + (serverWorking ? "запущен!" : "остановлен"));
-        this.serverWorking.set(serverWorking);
+        handleServerStatus(serverWorking);
     }
 
     private void startServer(int port){
