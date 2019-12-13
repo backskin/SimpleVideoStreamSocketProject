@@ -1,4 +1,4 @@
-package backsoft.imgserver;
+package backsoft.videoserver;
 
 import backsoft.utils.Loader;
 import backsoft.utils.Pair;
@@ -11,7 +11,7 @@ public class ServerApp extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        primaryStage.setTitle("IMGSocketServer");
+        primaryStage.setTitle("VideoSocketServer");
         Pair<Parent, Controller> fxmlData = Loader.loadFXML(ServerApp.class.getResource("server.fxml"));
         fxmlData.getTwo().setStage(primaryStage);
         Loader.openInAWindow(primaryStage, fxmlData.getOne(), false);

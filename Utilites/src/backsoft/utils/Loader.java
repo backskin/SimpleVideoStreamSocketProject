@@ -27,7 +27,7 @@ public class Loader {
             FXMLLoader loader = new FXMLLoader(url);
             return new Pair<>(loader.load(), loader.getController());
         } catch (IOException e) {
-            AlertHandler.makeError("РЎРёСЃС‚РµРјРЅР°СЏ РѕС€РёР±РєР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ FXML", null);
+            AlertHandler.makeError("Системная ошибка при загрузке FXML", null);
             e.printStackTrace();
             throw new RuntimeException();
         }
@@ -65,8 +65,8 @@ public class Loader {
         imageView.setPreserveRatio(true);
         imageView.setFitWidth(800);
         imageView.setFitHeight(540);
-        Button closeButton = new Button("Р—Р°РєСЂС‹С‚СЊ");
-        Button saveButton = new Button("РЎРѕС…СЂР°РЅРёС‚СЊ РєР°Рє");
+        Button closeButton = new Button("Закрыть");
+        Button saveButton = new Button("Сохранить как");
 
         HBox buttonsPane = new HBox();
         buttonsPane.setSpacing(20);

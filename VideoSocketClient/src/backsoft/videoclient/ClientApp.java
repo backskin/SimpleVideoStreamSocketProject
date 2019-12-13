@@ -1,4 +1,4 @@
-package backsoft.imgclient;
+package backsoft.videoclient;
 
 import backsoft.utils.Loader;
 import backsoft.utils.Pair;
@@ -11,7 +11,7 @@ public class ClientApp extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        primaryStage.setTitle("IMGSocketClient");
+        primaryStage.setTitle("VideoSocketClient");
 
         Pair<Parent, Controller> fxmlData = Loader.loadFXML(this.getClass().getResource("client.fxml"));
         fxmlData.getTwo().setStage(primaryStage);

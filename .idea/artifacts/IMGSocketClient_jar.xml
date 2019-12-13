@@ -1,9 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="IMGSocketClient:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/IMGSocketClient_jar</output-path>
-    <root id="archive" name="IMGSocketClient.jar">
-      <element id="module-output" name="IMGSocketClient" />
-      <element id="module-output" name="Utilites" />
-    </root>
-  </artifact>
-</component>

@@ -18,7 +18,7 @@ public class FileHandler {
         try {
             return file == null ? null : new Pair<>(Files.readAllBytes(file.toPath()), file);
         } catch (IOException e){
-            AlertHandler.makeError("–°–∏—Å—Ç–µ–º–Ω–∞—è –æ—à–∏–±–∫–∞ –ø—Ä–∏ —á—Ç–µ–Ω–∏–∏ —Å —Ñ–∞–π–ª–∞", stage);
+            AlertHandler.makeError("—ËÒÚÂÏÌ‡ˇ Ó¯Ë·Í‡ ÔË ˜ÚÂÌËË Ò Ù‡ÈÎ‡", stage);
         }
         return null;
     }
@@ -33,46 +33,17 @@ public class FileHandler {
         }
     }
 
-    public static byte[] readBytesFromBase64(String stopWord, DataInputStream in, IntegerProperty chunks) throws IOException {
-
-        StringBuilder imgAsString = new StringBuilder();
-        String utf = in.readUTF();
-        while (!utf.equals(stopWord)){
-            if (chunks != null)
-                Platform.runLater(()->chunks.setValue(chunks.getValue()+1));
-            imgAsString.append(utf);
-            utf = in.readUTF();
-        }
-        if (chunks != null) Platform.runLater(()->chunks.setValue(0));
-        return Base64.getDecoder().decode(imgAsString.toString());
-    }
-
     public static void saveFileAs(String origPath, byte[] fileByte, Stage stage) throws IOException {
 
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("–°–æ—Ö—Ä–∞–Ω—ã—Ç –∫–∞–∫—ä...");
+        fileChooser.setTitle("—Óı‡Ì˚Ú Í‡Í˙...");
         File oldDir = new File(origPath);
         fileChooser.setInitialDirectory(oldDir.getParentFile());
         fileChooser.setInitialFileName(oldDir.getName());
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("–§–∞–π–ª ",
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("‘‡ÈÎ ",
                 origPath.substring(origPath.lastIndexOf("."))));
         File file = fileChooser.showSaveDialog(stage);
 
         saveToFile(file.getAbsolutePath(), fileByte);
-    }
-
-    public static void sendBytesByBase64(String stopWord, byte[] bytes, DataOutputStream out) throws IOException{
-
-        String imgAsString = Base64.getEncoder().encodeToString(bytes);
-
-        int chunkSize = 128;
-        while (!"".equals(imgAsString)){
-            int endIndex = Math.min(chunkSize, imgAsString.length());
-            out.writeUTF(imgAsString.substring(0,endIndex));
-            imgAsString = imgAsString.substring(endIndex);
-            out.flush();
-        }
-        out.writeUTF(stopWord);
-        out.flush();
     }
 }

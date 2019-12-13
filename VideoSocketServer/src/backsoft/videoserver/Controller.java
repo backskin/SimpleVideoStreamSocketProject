@@ -1,4 +1,4 @@
-package backsoft.imgserver;
+package backsoft.videoserver;
 
 import backsoft.utils.FileHandler;
 import backsoft.utils.Loader;
@@ -59,7 +59,7 @@ public class Controller {
     }
 
     void setServerWorking(boolean serverWorking) {
-        writeToConsole("РЎРµСЂРІРµСЂ " + (serverWorking ? "Р·Р°РїСѓС‰РµРЅ!" : "РѕСЃС‚Р°РЅРѕРІР»РµРЅ"));
+        writeToConsole("Сервер " + (serverWorking ? "запущен!" : "остановлен"));
         this.serverWorking.set(serverWorking);
     }
 
@@ -71,7 +71,7 @@ public class Controller {
     }
 
     synchronized void writeToConsole(String data){
-        Platform.runLater(()->consoleArea.appendText("\n"+data));
+        Platform.runLater(()->consoleArea.appendText(data+"\n"));
     }
 
     private synchronized void handleServerStatus(boolean enable){
@@ -83,7 +83,7 @@ public class Controller {
     @FXML
     public void handleCloseButton() {
 
-        writeToConsole("РџРѕРїС‹С‚РєР° Р·Р°РІРµСЂС€РµРЅРёСЏ СЂР°Р±РѕС‚С‹ СЃРµСЂРІРµСЂР°");
+        writeToConsole("Попытка завершения работы сервера");
         if (serverThread != null){
             runnable.stop();
             serverThread.interrupt();
@@ -109,12 +109,12 @@ public class Controller {
 
         try {
             int port = Integer.parseInt(portField.getText());
-            writeToConsole("РџРѕРїС‹С‚РєР° РѕС‚РєСЂС‹С‚СЊ РїРѕСЂС‚ РґР»СЏ РїСЂРѕСЃР»СѓС€РёРІР°РЅРёСЏ");
+            writeToConsole("Попытка открыть порт для прослушивания");
             startServer(port);
             handleServerStatus(true);
 
         } catch (NumberFormatException e){
-            makeError("РћС€РёР±РєР° РІРІРѕРґР° (РЅРѕРјРµСЂ РїРѕСЂС‚Р°)!", stage);
+            makeError("Ошибка ввода (номер порта)!", stage);
         }
     }
 }

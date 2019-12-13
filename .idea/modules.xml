@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/IMGSocketClient/IMGSocketClient.iml" filepath="$PROJECT_DIR$/IMGSocketClient/IMGSocketClient.iml" />
-      <module fileurl="file://$PROJECT_DIR$/IMGSocketServer/IMGSocketServer.iml" filepath="$PROJECT_DIR$/IMGSocketServer/IMGSocketServer.iml" />
       <module fileurl="file://$PROJECT_DIR$/Utilites/Utilites.iml" filepath="$PROJECT_DIR$/Utilites/Utilites.iml" />
+      <module fileurl="file://$PROJECT_DIR$/VideoSocketClient/VideoSocketClient.iml" filepath="$PROJECT_DIR$/VideoSocketClient/VideoSocketClient.iml" />
+      <module fileurl="file://$PROJECT_DIR$/VideoSocketServer/VideoSocketServer.iml" filepath="$PROJECT_DIR$/VideoSocketServer/VideoSocketServer.iml" />
     </modules>
   </component>
 </project>

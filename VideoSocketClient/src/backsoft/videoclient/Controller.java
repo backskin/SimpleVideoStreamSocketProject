@@ -1,6 +1,7 @@
-package backsoft.imgclient;
+package backsoft.videoclient;
 
 import backsoft.utils.AlertHandler;
+import backsoft.utils.Streamer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -12,9 +13,14 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.rmi.UnknownHostException;
+import java.util.Arrays;
+
 import backsoft.utils.Pair;
 import javafx.stage.Stage;
 
+import static backsoft.utils.CommonPhrases.SIGNAL.*;
+import static backsoft.utils.CommonPhrases.imageSignal;
+import static backsoft.utils.CommonPhrases.system;
 import static backsoft.utils.FileHandler.*;
 import static backsoft.utils.Loader.*;
 
@@ -49,28 +55,28 @@ public class Controller {
 
     private void connectToServer(String address, int port) {
 
-        writeToConsole("РџРѕРґРєР»СЋС‡РµРЅРёРµ Рє СЃРµСЂРІРµСЂСѓ\n" + address + ":" + port);
+        writeToConsole("Подключение к серверу\n" + address + ":" + port);
         Runnable r = () -> {
             try {
                 socket = new Socket();
                 socket.connect(new InetSocketAddress(address, port), 3500);
                 if (socket.isConnected()) {
-                        writeToConsole("РЎРѕРµРґРёРЅРµРЅРёРµ СѓСЃС‚Р°РЅРѕРІР»РµРЅРѕ!");
+                        writeToConsole("Соединение установлено!");
                         disconnectButton.setDisable(false);
                         if (imageFile != null) sendButton.setDisable(false);
                         startServerListener();
                 } else {
                     socket.close();
                         connectButton.setDisable(false);
-                        writeToConsole("РџРѕРґРєР»СЋС‡РµРЅРёРµ РЅРµ СѓРґР°Р»РѕСЃСЊ.");
+                        writeToConsole("Подключение не удалось.");
                 }
 
             } catch (UnknownHostException e) {
                 connectButton.setDisable(false);
-                writeToConsole("РќРµРёР·РІРµСЃС‚РЅС‹Р№ С…РѕСЃС‚!\n" + e.getLocalizedMessage());
+                writeToConsole("Неизвестный хост!\n" + e.getLocalizedMessage());
             } catch (IOException e) {
                 connectButton.setDisable(false);
-                writeToConsole("РћС€РёР±РєР° РїСЂРё РїРѕРґРєР»СЋС‡РµРЅРёРё Рє СЃРµСЂРІРµСЂСѓ\n" + e.getLocalizedMessage());
+                writeToConsole("Ошибка при подключении к серверу\n" + e.getLocalizedMessage());
             }
 
         };
@@ -84,21 +90,28 @@ public class Controller {
         pathField.setDisable(block);
     }
 
-    private void sendToServer() {
+    private void sendImageToServer() {
 
         Platform.runLater(()->blockRightSide(true));
 
         try {
             DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
 
-            dout.writeUTF("image");
+            dout.writeUTF(imageSignal.get(START));
             dout.flush();
             Thread.sleep(10);
 
             dout.writeUTF(imageFile.getTwo().getName());
             dout.flush();
+            Thread.sleep(50);
 
-            sendBytesByBase64("image-end", imageFile.getOne(), dout);
+            int imageHASH = Arrays.hashCode(imageFile.getOne());
+            String hash = Integer.toString(imageHASH);
+            dout.writeUTF(hash);
+            dout.flush();
+            Thread.sleep(50);
+
+            Streamer.sendBytesByBase64(imageSignal.get(STOP), imageFile.getOne(), dout);
 
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
@@ -106,7 +119,7 @@ public class Controller {
     }
 
     private synchronized void writeToConsole(String data){
-        Platform.runLater(()->consoleArea.appendText("\n"+data));
+        Platform.runLater(()->consoleArea.appendText(data+"\n"));
     }
 
     private void startServerListener(){
@@ -114,20 +127,20 @@ public class Controller {
             try {
                 while (!socket.isClosed()) {
                     DataInputStream in = new DataInputStream(socket.getInputStream());
-                    String respond = in.readUTF();
-                    if (respond.equals("close")) {
-                        writeToConsole("РЎРµСЂРІРµСЂ РѕС‚РєР»СЋС‡РёР» РІР°СЃ :(");
+                    String response = in.readUTF();
+                    if (response.equals(system.get(BYEBYE))) {
+                        writeToConsole("Сервер отключил вас :(");
                         in.close();
                         handleDisconnect();
                     }
-                    if (respond.equals("gotit")) {
+                    if (response.equals(imageSignal.get(CORRECT))) {
                         blockRightSide(false);
                         AlertHandler.makeInfo(
-                                "РР·РѕР±СЂР°Р¶РµРЅРёРµ СѓСЃРїРµС€РЅРѕ РґРѕСЃС‚Р°РІР»РµРЅРѕ!", stage);
+                                "Изображение успешно доставлено!", stage);
                     }
                 }
             } catch (IOException e) {
-                Controller.this.writeToConsole("РЎРІСЏР·СЊ СЃ СЃРµСЂРІРµСЂРѕРј РїСЂРµСЂРІР°РЅР°");
+                Controller.this.writeToConsole("Связь с сервером прервана");
                 handleDisconnect();
             }
         };
@@ -146,7 +159,7 @@ public class Controller {
             connectToServer(address, port);
 
         } catch (NumberFormatException e){
-            AlertHandler.makeError("РћС€РёР±РєР° РІРІРѕРґР° РїРѕСЂС‚Р°!", stage);
+            AlertHandler.makeError("Ошибка ввода порта!", stage);
         }
     }
 
@@ -154,17 +167,21 @@ public class Controller {
     public void handleDisconnect() {
 
         try {
-            if (socket != null && !socket.isClosed() && socket.isConnected()) {
+
+            if (clientThread.isAlive())
                 clientThread.interrupt();
+
+            if (socket != null && !socket.isClosed() && socket.isConnected()) {
+
                 DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
-                dout.writeUTF("quit");
+                dout.writeUTF(system.get(BYEBYE));
                 dout.flush();
                 socket.getOutputStream().close();
                 socket.close();
             }
-            writeToConsole("РћС‚РєР»СЋС‡РµРЅ РѕС‚ СЃРµСЂРІРµСЂР°");
+            writeToConsole("Отключен от сервера");
         } catch (IOException e) {
-            writeToConsole("РћС€РёР±РєР° РѕС‚СЃРѕРµРґРёРЅРµРЅРёСЏ:");
+            writeToConsole("Ошибка отсоединения:");
             writeToConsole(e.getLocalizedMessage());
         }
         connectButton.setDisable(false);
@@ -187,7 +204,7 @@ public class Controller {
     @FXML
     private void handleSendButton() {
 
-        Thread sendThread = new Thread(this::sendToServer);
+        Thread sendThread = new Thread(this::sendImageToServer);
         sendThread.start();
     }
 }
