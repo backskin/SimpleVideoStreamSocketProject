@@ -12,7 +12,7 @@ public class ClientApp extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-        primaryStage.setTitle("VideoSocketClient");
+        primaryStage.setTitle("Клиент стримера");
 
         Pair<Parent, Controller> fxmlData = Loader.loadFXML(this.getClass().getResource("mainWindow.fxml"));
         Scene mainScene = new Scene(fxmlData.getOne());

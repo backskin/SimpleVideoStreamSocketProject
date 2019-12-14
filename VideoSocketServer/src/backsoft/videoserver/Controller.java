@@ -3,26 +3,29 @@ package backsoft.videoserver;
 import backsoft.utils.FileHandler;
 import backsoft.utils.Loader;
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.*;
+import javafx.beans.value.ObservableStringValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
+import javax.naming.ldap.SortKey;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.Socket;
 
 import static backsoft.utils.AlertHandler.*;
 
 public class Controller {
 
+    @FXML
+    private TableView<Socket> clientsTable;
     @FXML
     private TextField portField;
     @FXML
@@ -31,8 +34,6 @@ public class Controller {
     private TextArea consoleArea;
     @FXML
     private Button closeButton;
-    @FXML
-    private TextField chunksField;
     private IntegerProperty chunks = new SimpleIntegerProperty(0);
     private Stage stage;
 
@@ -40,9 +41,6 @@ public class Controller {
         return chunks;
     }
 
-    public void visualiseChunksField(boolean visible){
-        Platform.runLater(()->chunksField.setVisible(visible));
-    }
 
     void setStage(Stage stage){
         this.stage = stage;
@@ -54,7 +52,17 @@ public class Controller {
 
     @FXML
     private void initialize(){
-        chunksField.textProperty().bind(chunks.asString());
+        clientsTable.getColumns().get(0).setCellValueFactory(param -> new ObservableStringValue());
+    }
+
+    void putClientToTable(Socket client){
+        Platform.runLater(()->{
+            clientsTable.getItems().add(client);
+        });
+    }
+
+    void removeClientFromTable(Socket client){
+        Platform.runLater(()->{});
     }
 
     void setServerWorking(boolean serverWorking) {

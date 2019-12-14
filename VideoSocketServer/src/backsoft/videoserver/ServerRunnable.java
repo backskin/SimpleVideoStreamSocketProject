@@ -2,7 +2,6 @@ package backsoft.videoserver;
 
 import backsoft.utils.*;
 import javafx.application.Platform;
-import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -13,10 +12,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static backsoft.utils.CommonPhrases.*;
 import static backsoft.utils.CommonPhrases.SIGNAL.*;
@@ -36,7 +32,7 @@ public class ServerRunnable implements Runnable {
     class SocketTask implements Runnable {
 
         Socket clientSocket;
-        ClientStreamWindow streamWindowController;
+        ClientStreamWindow streamWindow;
         Stage clientWindow;
         DataInputStream in;
         DataOutputStream out;
@@ -44,20 +40,21 @@ public class ServerRunnable implements Runnable {
         SocketTask(Socket client) throws IOException {
             super();
             clientSocket = client;
-            clientWindow = new Stage();
-            clientWindow.setTitle("Стрим Клиента " + client.getInetAddress());
             in = new DataInputStream(clientSocket.getInputStream());
             out = new DataOutputStream(clientSocket.getOutputStream());
 
             Pair<Parent, ClientStreamWindow> fxml =Loader.loadFXML(
                     ServerRunnable.class.getResource("clientStreamWindow.fxml"));
 
-            streamWindowController = fxml.getTwo();
-            Platform.runLater(()->
-                    Loader.openInAWindow(
-                            clientWindow,
-                            new Scene(fxml.getOne()),
-                            true));
+            streamWindow = fxml.getTwo();
+            Platform.runLater(()-> {
+                streamWindow.setMainStage(new Stage());
+                clientWindow.setTitle("Стрим Клиента " + client.getInetAddress());
+                Loader.openInAWindow(
+                        streamWindow.getMainStage(),
+                        new Scene(fxml.getOne()),
+                        true);
+            });
         }
 
         private void handleVideoStreamReceive() throws IOException {
@@ -76,7 +73,6 @@ public class ServerRunnable implements Runnable {
             String filename = in.readUTF();
             String hash = in.readUTF();
             int imageHASH = Integer.parseInt(hash);
-//            controller.visualiseChunksField(true);
             byte[] bytes = Streamer.readBytesFromBase64(imageSignal.get(STOP), in, controller.chunksProperty());
 
             controller.writeToConsole("От клиента "
@@ -97,12 +93,7 @@ public class ServerRunnable implements Runnable {
             FileHandler.saveToFile("temp" + File.separator + filename, bytes);
             BufferedImage bImage = Loader.convertToBuffImage(bytes);
 
-            if (bImage != null)
-                streamWindowController.streamImageView.setImage(
-                        SwingFXUtils.toFXImage(bImage, null));
-
-//            if (bImage != null) controller.showImage(filename, bImage, bytes);
-            controller.visualiseChunksField(false);
+            if (bImage != null) streamWindow.showImage(bImage, filename);
         }
 
         private void handleQuit() {
@@ -153,9 +144,17 @@ public class ServerRunnable implements Runnable {
            for (Thread th : currentThreads.values()){
                th.interrupt();
            }
-           currentSockets.forEach(this::removeClient);
-           for (Socket sock : currentSockets) removeClient(sock);
-           currentSockets.clear();
+           for (int i = 0; i < currentSockets.size(); i++) {
+
+               Timer t = new Timer();
+               t.schedule(new TimerTask() {
+                   @Override
+                   public void run() {
+                       currentTasks.get(currentSockets.get(0)).streamWindow.close();
+                   }
+               }, 2000);
+               removeClient(currentSockets.get(0));
+           }
            if (serverSocket != null) serverSocket.close();
        } catch (IOException e) {
            AlertHandler.makeError("Сервер не остановлен. Ошибка:\n"
@@ -209,7 +208,10 @@ public class ServerRunnable implements Runnable {
                 DataOutputStream out = new DataOutputStream(client.getOutputStream());
                 out.writeUTF(system.get(BYEBYE));
                 out.flush();
+                currentTasks.get(client).streamWindow.close();
+                currentTasks.get(client).clientWindow.close();
                 controller.writeToConsole("Клиент " + client.getRemoteSocketAddress() + " отключён");
+                currentSockets.remove(client);
                 if (currentSockets.isEmpty()) serverSocket.setSoTimeout(SERVER_TIMEOUT);
             }
         }catch (SocketException se){

@@ -23,6 +23,16 @@ import java.net.URL;
 
 public class Loader {
 
+    private static Stage mainStage;
+
+    public static Stage getMainStage() {
+        return mainStage;
+    }
+
+    public static void setMainStage(Stage mainStage) {
+        Loader.mainStage = mainStage;
+    }
+
     public static <T> Pair<Parent, T> loadFXML(URL url) {
         try {
             FXMLLoader loader = new FXMLLoader(url);
