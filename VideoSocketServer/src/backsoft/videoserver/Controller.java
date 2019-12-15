@@ -1,23 +1,15 @@
 package backsoft.videoserver;
 
-import backsoft.utils.FileHandler;
-import backsoft.utils.Loader;
 import javafx.application.Platform;
 import javafx.beans.property.*;
-import javafx.beans.value.ObservableStringValue;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.stage.Stage;
 
-import javax.naming.ldap.SortKey;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.net.Socket;
 
 import static backsoft.utils.AlertHandler.*;
@@ -48,21 +40,18 @@ public class Controller {
 
     private ServerRunnable runnable;
     private Thread serverThread;
-    private BooleanProperty serverWorking = new SimpleBooleanProperty();
 
     @FXML
     private void initialize(){
-        clientsTable.getColumns().get(0).setCellValueFactory(param -> new ObservableStringValue());
+        clientsTable.getColumns().get(0).setCellValueFactory(new PropertyValueFactory<>("inetAddress"));
     }
 
     void putClientToTable(Socket client){
-        Platform.runLater(()->{
-            clientsTable.getItems().add(client);
-        });
+        Platform.runLater(()-> clientsTable.getItems().add(client));
     }
 
     void removeClientFromTable(Socket client){
-        Platform.runLater(()->{});
+        Platform.runLater(()-> clientsTable.getItems().remove(client));
     }
 
     void setServerWorking(boolean serverWorking) {
@@ -95,20 +84,6 @@ public class Controller {
             runnable.stop();
             serverThread.interrupt();
         }
-    }
-
-    void showImage(String imageName, BufferedImage image, byte[] source){
-        Platform.runLater(()->{
-            String path = "images"+File.separator+imageName;
-            EventHandler<ActionEvent> handler = event -> {
-                try {
-                    FileHandler.saveFileAs(path, source, stage);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            };
-            Loader.showImageInAWindow(imageName, image, handler);
-        });
     }
 
     @FXML

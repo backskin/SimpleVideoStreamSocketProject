@@ -11,20 +11,11 @@ import java.awt.image.BufferedImage;
 
 public class ClientStreamWindow {
 
+    public Label extraStatsLabel;
     @FXML
     private ImageView streamImageView;
     @FXML
     private Label statsLabel;
-
-    private Stage mainStage;
-
-    public void setMainStage(Stage mainStage) {
-        this.mainStage = mainStage;
-    }
-
-    public Stage getMainStage() {
-        return mainStage;
-    }
 
     public void showImage(BufferedImage image, String title){
         Platform.runLater(()->{
@@ -34,10 +25,5 @@ public class ClientStreamWindow {
             streamImageView.setFitWidth(475.0);
             statsLabel.setText(title);
         });
-    }
-
-    public void close(){
-
-        mainStage.close();
     }
 }

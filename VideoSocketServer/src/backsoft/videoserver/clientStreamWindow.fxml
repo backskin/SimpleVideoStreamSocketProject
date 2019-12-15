@@ -8,19 +8,17 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.StackPane?>
 
-<AnchorPane prefHeight="360.0" prefWidth="500.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="backsoft.videoserver.ClientStreamWindow">
-   <children>
-      <StackPane layoutX="12.0" layoutY="11.0" prefHeight="300.0" prefWidth="475.0">
-         <children>
-            <ImageView fx:id="streamImageView" fitHeight="36.0" fitWidth="128.0" opacity="0.42" pickOnBounds="true" preserveRatio="true">
-               <image>
-                  <Image url="@resources/empty-stream.png" />
-               </image></ImageView>
-         </children>
-      </StackPane>
-      <Button layoutX="419.0" layoutY="322.0" mnemonicParsing="false" text="Button" />
-      <Button layoutX="358.0" layoutY="322.0" mnemonicParsing="false" text="Button" />
-      <Label fx:id="statsLabel" layoutX="33.0" layoutY="326.0" text="Что происходит?" />
-      <Separator layoutX="25.0" layoutY="310.0" prefHeight="7.0" prefWidth="450.0" />
-   </children>
+<AnchorPane prefHeight="360.0" prefWidth="500.0" xmlns="http://javafx.com/javafx/11.0.1"
+            xmlns:fx="http://javafx.com/fxml/1" fx:controller="backsoft.videoserver.ClientStreamWindow">
+   <StackPane layoutX="12.0" layoutY="11.0" prefHeight="300.0" prefWidth="475.0">
+      <ImageView fx:id="streamImageView" fitHeight="36.0" fitWidth="128.0" opacity="0.42" pickOnBounds="true"
+                 preserveRatio="true">
+         <Image url="@resources/empty-stream.png"/>
+      </ImageView>
+   </StackPane>
+   <Button layoutX="419.0" layoutY="322.0" mnemonicParsing="false" text="Button"/>
+   <Button layoutX="358.0" layoutY="322.0" mnemonicParsing="false" text="Button"/>
+   <Label fx:id="statsLabel" layoutX="33.0" layoutY="318.0" text="Что приходит?"/>
+   <Separator layoutX="25.0" layoutY="310.0" prefHeight="7.0" prefWidth="450.0"/>
+   <Label fx:id="extraStatsLabel" layoutX="33.0" layoutY="335.0" text="Размер/Скорость"/>
 </AnchorPane>
