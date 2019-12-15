@@ -79,6 +79,7 @@ public class ServerRunnable implements Runnable {
             String filename = in.readUTF();
             String hash = in.readUTF();
             int imageHASH = Integer.parseInt(hash);
+
             byte[] bytes = Streamer.readBytesFromBase64(imageSignal.get(STOP), in, controller.chunksProperty());
 
             controller.writeToConsole("От клиента "
@@ -137,7 +138,6 @@ public class ServerRunnable implements Runnable {
 
         public void close(){
             Platform.runLater(()-> clientWindow.close());
-            clientWindow = null;
             controller.writeToConsole("Клиент "
                     + clientSocket.getRemoteSocketAddress()
                     + " отсоединился");
