@@ -1,7 +1,6 @@
 package backsoft.videoserver;
 
 import javafx.application.Platform;
-import javafx.beans.property.*;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableView;
@@ -26,13 +25,7 @@ public class Controller {
     private TextArea consoleArea;
     @FXML
     private Button closeButton;
-    private IntegerProperty chunks = new SimpleIntegerProperty(0);
     private Stage stage;
-
-    public IntegerProperty chunksProperty() {
-        return chunks;
-    }
-
 
     void setStage(Stage stage){
         this.stage = stage;

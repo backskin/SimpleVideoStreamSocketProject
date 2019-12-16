@@ -13,9 +13,11 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static backsoft.utils.CommonPhrases.*;
 import static backsoft.utils.CommonPhrases.SIGNAL.*;
+import static backsoft.utils.Streamer.*;
 
 public class ServerRunnable implements Runnable {
 
@@ -32,7 +34,7 @@ public class ServerRunnable implements Runnable {
     class SocketTask implements Runnable {
 
         Socket clientSocket;
-        ClientStreamWindow streamWindow;
+        final ClientStreamWindow streamWindow;
         Stage clientWindow;
         DataInputStream in;
         DataOutputStream out;
@@ -63,24 +65,48 @@ public class ServerRunnable implements Runnable {
 
         private void handleVideoStreamReceive() throws IOException {
 
+            AtomicLong failedFrames = new AtomicLong();
+
+            String filename = in.readUTF();
+
             controller.writeToConsole("Клиент "
                     + clientSocket.getRemoteSocketAddress()
-                    + " передаёт видео...");
+                    + " передаёт видео " + filename);
+
+            streamWindow.setStatsLabel("Видеопоток - " + filename);
+
+            while (in.readUTF().equals(videoSignal.get(PLAY))){
+//                String hash = in.readUTF();
+//                int frameHASH = Integer.parseInt(hash);
+                byte[] bytes = readBytesFromBase64(videoSignal.get(NEXT), in);
+                streamWindow.setStreamFrame(convertToFxImage(
+                        readAFrame(
+                                bytes,
+                                Integer.parseInt(in.readUTF()),
+                                Integer.parseInt(in.readUTF())
+                        )
+                ));
+
+//              new Thread(()->{
+//                    if (Arrays.hashCode(bytes) != frameHASH)
+//                        failedFrames.getAndIncrement();
+//                }).start();
+            }
 
 
         }
 
         private void handleImageReceive() throws IOException {
 
-            controller.writeToConsole("Клиент "
-                    + clientSocket.getRemoteSocketAddress()
-                    + " передаёт изображение...");
-
             String filename = in.readUTF();
             String hash = in.readUTF();
             int imageHASH = Integer.parseInt(hash);
 
-            byte[] bytes = Streamer.readBytesFromBase64(byteFileSignal.get(STOP), in, controller.chunksProperty());
+            controller.writeToConsole("Клиент "
+                    + clientSocket.getRemoteSocketAddress()
+                    + " передаёт изображение " + filename);
+
+            byte[] bytes = Streamer.readBytesFromBase64(byteFileSignal.get(STOP), in);
 
             controller.writeToConsole("От клиента "
                     + clientSocket.getRemoteSocketAddress()
@@ -89,17 +115,14 @@ public class ServerRunnable implements Runnable {
             if (Arrays.hashCode(bytes) == imageHASH){
                 out.writeUTF(byteFileSignal.get(CORRECT));
                 out.flush();
+                streamWindow.setStreamFrame(convertToFxImage(convertToBuffImage(bytes)));
                 controller.writeToConsole("файл " + filename + ": пришел без потерь");
             } else {
                 out.writeUTF(byteFileSignal.get(MISTAKE));
                 out.flush();
                 controller.writeToConsole(" пришел битым :(");
             }
-
             FileHandler.saveToFile("temp" + File.separator + filename, bytes);
-            BufferedImage bImage = Loader.convertToBuffImage(bytes);
-
-            if (bImage != null) streamWindow.showImage(bImage, filename);
         }
 
         private void handleQuit() {

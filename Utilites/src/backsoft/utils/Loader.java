@@ -66,23 +66,6 @@ public class Loader {
         stage.setMinWidth(stage.getWidth());
     }
 
-    public static BufferedImage convertToBuffImage(byte[] imageInByte){
-
-        InputStream in = new ByteArrayInputStream(imageInByte);
-        BufferedImage bImageFromConvert = null;
-        try {
-            bImageFromConvert = ImageIO.read(in);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return bImageFromConvert;
-    }
-
-    public static Image convertToFxImage(BufferedImage image) {
-
-        return image == null ? null : SwingFXUtils.toFXImage(image, null);
-    }
-
     public static synchronized void showImageInAWindow(String imgName, BufferedImage bImage, EventHandler<ActionEvent> saveEvent){
 
         ImageView imageView = new ImageView(SwingFXUtils.toFXImage(bImage, null));

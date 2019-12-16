@@ -17,7 +17,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.rmi.UnknownHostException;
 
-import backsoft.utils.Pair;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
@@ -27,7 +26,8 @@ import static backsoft.utils.CommonPhrases.SIGNAL.*;
 import static backsoft.utils.CommonPhrases.byteFileSignal;
 import static backsoft.utils.CommonPhrases.system;
 import static backsoft.utils.FileHandler.*;
-import static backsoft.utils.Loader.*;
+import static backsoft.utils.Streamer.convertToBuffImage;
+import static backsoft.utils.Streamer.convertToFxImage;
 
 public class Controller {
 
@@ -149,7 +149,7 @@ public class Controller {
             builder.setOutputStream(socket.getOutputStream())
                     .setFileToStream(imageFile)
                     .build()
-                    .startFileStream();
+                    .startFileStreaming();
 
         } catch (IOException e) {
             e.printStackTrace();
