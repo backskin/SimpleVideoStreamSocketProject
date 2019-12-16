@@ -65,8 +65,6 @@ public class ServerRunnable implements Runnable {
 
         private void handleVideoStreamReceive() throws IOException {
 
-            AtomicLong failedFrames = new AtomicLong();
-
             String filename = in.readUTF();
 
             controller.writeToConsole("Клиент "
@@ -75,22 +73,15 @@ public class ServerRunnable implements Runnable {
 
             streamWindow.setStatsLabel("Видеопоток - " + filename);
 
+            int width = Integer.parseInt(in.readUTF());
+            int height = Integer.parseInt(in.readUTF());
+
             while (in.readUTF().equals(videoSignal.get(PLAY))){
-//                String hash = in.readUTF();
-//                int frameHASH = Integer.parseInt(hash);
+
                 byte[] bytes = readBytesFromBase64(videoSignal.get(NEXT), in);
                 streamWindow.setStreamFrame(convertToFxImage(
-                        readAFrame(
-                                bytes,
-                                Integer.parseInt(in.readUTF()),
-                                Integer.parseInt(in.readUTF())
-                        )
+                        readAFrame(bytes,width,height)
                 ));
-
-//              new Thread(()->{
-//                    if (Arrays.hashCode(bytes) != frameHASH)
-//                        failedFrames.getAndIncrement();
-//                }).start();
             }
 
 

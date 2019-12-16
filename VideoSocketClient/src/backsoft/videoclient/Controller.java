@@ -3,6 +3,7 @@ package backsoft.videoclient;
 import backsoft.utils.AlertHandler;
 import backsoft.utils.Loader;
 import backsoft.utils.Streamer;
+import backsoft.utils.Streamer.StreamerBuilder;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
@@ -144,7 +145,7 @@ public class Controller {
         Platform.runLater(()-> blockImageScreenWhileSending(true));
 
         writeToConsole("Отправление изображения на сервер...");
-        Streamer.StreamerBuilder builder = new Streamer.StreamerBuilder();
+        StreamerBuilder builder = new StreamerBuilder();
         try {
             builder.setOutputStream(socket.getOutputStream())
                     .setFileToStream(imageFile)
@@ -252,7 +253,7 @@ public class Controller {
                 );
                 videoView.getMediaPlayer().volumeProperty().bind(volumeSlider.valueProperty());
                 videoPathField.setText(videoFile.getAbsolutePath());
-                streamer = (new Streamer.StreamerBuilder())
+                streamer = (new StreamerBuilder())
                         .setOutputStream(socket.getOutputStream())
                         .setVideoToStream(videoFile)
                         .build();

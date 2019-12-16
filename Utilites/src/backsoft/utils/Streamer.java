@@ -20,8 +20,7 @@ import java.util.Base64;
 import static backsoft.utils.CommonPhrases.SIGNAL.*;
 import static backsoft.utils.CommonPhrases.byteFileSignal;
 import static backsoft.utils.CommonPhrases.videoSignal;
-import static org.opencv.videoio.Videoio.CAP_PROP_FPS;
-import static org.opencv.videoio.Videoio.CAP_PROP_FRAME_COUNT;
+import static org.opencv.videoio.Videoio.*;
 
 public class Streamer {
 
@@ -58,8 +57,6 @@ public class Streamer {
             return streamer;
         }
     }
-
-
 
     public static BufferedImage readAFrame(byte[] bytes, int cols, int rows) {
 
@@ -172,17 +169,25 @@ public class Streamer {
 
         try {
             outputStream.writeUTF(videoSignal.get(START));
-
             outputStream.writeUTF(dataName);
+            outputStream.writeUTF(Integer.toString((int) capture.get(CAP_PROP_FRAME_WIDTH)));
+            outputStream.writeUTF(Integer.toString((int) capture.get(CAP_PROP_FRAME_HEIGHT)));
+
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+
+        final int rate = (int) (1000.0 / (frameRate));
+
         Runnable streamRun = ()-> {
             while (true) {
                 try {
                         if (!pauseFlag) {
                             if (counter < framesAmount) {
+
                                 outputStream.writeUTF(videoSignal.get(PLAY));
+
                                 counter++;
                                 Mat frame = getNextFrame();
                                 MatOfByte bytes = new MatOfByte(frame.reshape(1,
@@ -190,21 +195,19 @@ public class Streamer {
                                 byte[] frameInBytes = bytes.toArray();
 
                                 sendBytesByBase64(videoSignal.get(NEXT), new ByteArrayInputStream(frameInBytes), outputStream);
-                                outputStream.writeUTF(Integer.toString(frame.cols()));
-                                outputStream.writeUTF(Integer.toString(frame.rows()));
+
                             } else {
                                 outputStream.writeUTF(videoSignal.get(STOP));
                                 break;
                             }
+                            Thread.sleep(rate);
                         }
-
-                    } catch(IOException e){
+                    } catch(IOException | InterruptedException e){
                         e.printStackTrace();
                     }
             }
         };
 
-        int rate = (int) (1000.0 / (frameRate));
         System.out.println("RATE = " + rate);
         streamThread = new Thread(streamRun);
         streamThread.start();
@@ -217,12 +220,13 @@ public class Streamer {
 
     public void stopVideoStreaming(){
         System.out.println("client stopped stream");
-        if (streamThread != null && streamThread.isAlive())
+        if (streamThread != null && streamThread.isAlive()) {
             streamThread.interrupt();
-        try {
-            outputStream.writeUTF(videoSignal.get(STOP));
-        } catch (IOException e) {
-            e.printStackTrace();
+            try {
+                outputStream.writeUTF(videoSignal.get(STOP));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
