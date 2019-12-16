@@ -5,7 +5,6 @@ import javafx.application.Platform;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -80,18 +79,18 @@ public class ServerRunnable implements Runnable {
             String hash = in.readUTF();
             int imageHASH = Integer.parseInt(hash);
 
-            byte[] bytes = Streamer.readBytesFromBase64(imageSignal.get(STOP), in, controller.chunksProperty());
+            byte[] bytes = Streamer.readBytesFromBase64(byteFileSignal.get(STOP), in, controller.chunksProperty());
 
             controller.writeToConsole("От клиента "
                     + clientSocket.getRemoteSocketAddress()
                     + " получено изображение - " + filename);
 
             if (Arrays.hashCode(bytes) == imageHASH){
-                out.writeUTF(imageSignal.get(CORRECT));
+                out.writeUTF(byteFileSignal.get(CORRECT));
                 out.flush();
                 controller.writeToConsole("файл ё" + filename + ": пришел без потерь");
             } else {
-                out.writeUTF(imageSignal.get(MISTAKE));
+                out.writeUTF(byteFileSignal.get(MISTAKE));
                 out.flush();
                 controller.writeToConsole(" пришел битым :(");
             }
@@ -116,7 +115,7 @@ public class ServerRunnable implements Runnable {
             while (!clientSocket.isClosed()) {
                 try {
                     String command = in.readUTF();
-                    if (command.equals(imageSignal.get(START))) handleImageReceive();
+                    if (command.equals(byteFileSignal.get(START))) handleImageReceive();
                     else if (command.equals(videoSignal.get(START))) handleVideoStreamReceive();
                     else if (command.equals(system.get(BYEBYE))) handleQuit();
                 } catch (SocketException | EOFException ignored) {
@@ -213,7 +212,6 @@ public class ServerRunnable implements Runnable {
                 currentTasks.get(client).close();
                 controller.writeToConsole("Клиент " + client.getRemoteSocketAddress() + " отключён");
                 currentSockets.remove(client);
-                if (currentSockets.isEmpty()) serverSocket.setSoTimeout(SERVER_TIMEOUT);
             }
         }catch (SocketException se){
             AlertHandler.makeError(

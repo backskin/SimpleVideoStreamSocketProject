@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="360.0" prefWidth="450.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="backsoft.videoclient.Controller">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="360.0" prefWidth="450.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="backsoft.videoclient.Controller">
    <Label layoutX="24.0" layoutY="50.0" text="Host IP" />
    <Label layoutX="182.0" layoutY="53.0" text="Port" />
    <TextField fx:id="ipField" layoutX="24.0" layoutY="70.0" text="localhost" />
@@ -27,18 +27,14 @@
    <Button fx:id="photoButton" layoutX="16.0" layoutY="197.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handlePhotoButton" prefHeight="40.0" prefWidth="140.0" text="Отправка фото">
       <graphic>
          <ImageView fitHeight="20.0" fitWidth="30.0" opacity="0.69" pickOnBounds="true" preserveRatio="true">
-            <image>
-               <Image url="@resources/image-icon.png" />
-            </image>
+            <Image url="@resources/image-icon.png"/>
          </ImageView>
       </graphic>
    </Button>
-   <Button layoutX="16.0" layoutY="242.0" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handleVideoButton" prefHeight="40.0" prefWidth="140.0" text="Отправка видео">
+   <Button fx:id="videoButton" layoutX="16.0" layoutY="242.0" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handleVideoButton" prefHeight="40.0" prefWidth="140.0" text="Отправка видео">
       <graphic>
-         <ImageView fx:id="videoButton" fitHeight="20.0" fitWidth="30.0" opacity="0.7" pickOnBounds="true" preserveRatio="true">
-            <image>
-               <Image url="@resources/video-icon.png" />
-            </image>
+         <ImageView fitHeight="20.0" fitWidth="30.0" opacity="0.7" pickOnBounds="true" preserveRatio="true">
+            <Image url="@resources/video-icon.png" />
          </ImageView>
       </graphic>
    </Button>

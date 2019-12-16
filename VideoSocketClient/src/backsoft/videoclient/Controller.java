@@ -13,30 +13,39 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import java.io.*;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.rmi.UnknownHostException;
 import java.util.Arrays;
 
 import backsoft.utils.Pair;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
 import javafx.stage.Stage;
 
 import static backsoft.utils.CommonPhrases.SIGNAL.*;
-import static backsoft.utils.CommonPhrases.imageSignal;
+import static backsoft.utils.CommonPhrases.byteFileSignal;
 import static backsoft.utils.CommonPhrases.system;
 import static backsoft.utils.FileHandler.*;
 import static backsoft.utils.Loader.*;
 
 public class Controller {
 
-
     private Socket socket;
-    private Pair<byte[], File> imageFile;
+    private File imageFile;
     private Thread clientThread;
+    private Streamer streamer;
+
     private Stage stage;
     private Scene mainScene;
     private Scene videoScene;
     private Scene imageScene;
+
     private Pair<Double, Double> winSize = new Pair<>(.0,.0);
+
+    private File videoFile;
 
     void setStageAndScene(Stage stage, Scene scene){
         this.stage = stage;
@@ -52,11 +61,13 @@ public class Controller {
     @FXML
     private Button sendButton;
     @FXML
-    private ImageView videoButton;
+    private Button videoButton;
     @FXML
     private Button photoButton;
     @FXML
-    private TextField pathField;
+    private TextField imagePathField;
+    @FXML
+    private TextField videoPathField;
     @FXML
     private TextField ipField;
     @FXML
@@ -66,11 +77,19 @@ public class Controller {
     @FXML
     private ImageView imageView;
     @FXML
+    private MediaView videoView;
+    @FXML
     private Button connectButton;
     @FXML
     private Button disconnectButton;
     @FXML
     private Button chooseImageButton;
+
+    @FXML
+    private Button playPauseButton;
+    @FXML
+    private Button stopVideoButton;
+
 
     private void connectToServer(String address, int port) {
 
@@ -106,7 +125,7 @@ public class Controller {
     private void blockRightSide(boolean block){
         sendButton.setDisable(block);
         chooseImageButton.setDisable(block);
-        pathField.setDisable(block);
+        imagePathField.setDisable(block);
     }
 
     private void sendImageToServer() {
@@ -114,27 +133,13 @@ public class Controller {
         Platform.runLater(()->blockRightSide(true));
 
         writeToConsole("Отправление изображения на сервер...");
-
+        Streamer.StreamerBuilder builder = new Streamer.StreamerBuilder();
         try {
-            DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
+            builder.setOutputStream(socket.getOutputStream())
+                    .build()
+                    .startFileStream();
 
-            dout.writeUTF(imageSignal.get(START));
-            dout.flush();
-            Thread.sleep(10);
-
-            dout.writeUTF(imageFile.getTwo().getName());
-            dout.flush();
-            Thread.sleep(50);
-
-            int imageHASH = Arrays.hashCode(imageFile.getOne());
-            String hash = Integer.toString(imageHASH);
-            dout.writeUTF(hash);
-            dout.flush();
-            Thread.sleep(50);
-
-            Streamer.sendBytesByBase64(imageSignal.get(STOP), imageFile.getOne(), dout);
-
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -154,7 +159,7 @@ public class Controller {
                         in.close();
                         handleDisconnect();
                     }
-                    if (response.equals(imageSignal.get(CORRECT))) {
+                    if (response.equals(byteFileSignal.get(CORRECT))) {
                         blockRightSide(false);
                         writeToConsole("Сервер успешно получил изображение без потерь");
                         AlertHandler.makeInfo(
@@ -216,11 +221,30 @@ public class Controller {
     private void handleChooseImage() {
        imageFile = openFile(stage);
        if (imageFile != null) {
-           pathField.setText(imageFile.getTwo().getAbsolutePath());
+           imagePathField.setText(imageFile.getAbsolutePath());
            if (socket != null && socket.isConnected()) sendButton.setDisable(false);
-           Image preview = convertToFxImage(convertToBuffImage(imageFile.getOne()));
+           Image preview = convertToFxImage(convertToBuffImage(readBytes(imageFile)));
            if (preview != null){ imageView.setImage(preview);}
        }
+    }
+
+    @FXML
+    private void handleChooseVideo(){
+        videoFile = openVideoLink(stage);
+        if (videoFile != null){
+            try {
+                videoView.setMediaPlayer(
+                        new MediaPlayer(
+                                new Media(
+                                        videoFile.toURI().toURL().toExternalForm()
+                                )
+                        )
+                );
+
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @FXML
@@ -228,6 +252,16 @@ public class Controller {
 
         Thread sendThread = new Thread(this::sendImageToServer);
         sendThread.start();
+    }
+
+    @FXML
+    private void handlePlayPause(){
+        System.out.println("test-playpause");
+    }
+
+    @FXML
+    private void handleStopVideo(){
+        System.out.println("test-stop");
     }
 
     @FXML

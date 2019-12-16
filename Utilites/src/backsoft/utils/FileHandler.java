@@ -1,26 +1,38 @@
 package backsoft.utils;
-import javafx.application.Platform;
-import javafx.beans.property.IntegerProperty;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.Base64;
 
 public class FileHandler {
 
-    public static Pair<byte[], File> openFile(Stage stage){
+    public static File openVideoLink(Stage stage){
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Choose a file");
+        fileChooser.setTitle("Выберите видеофайл");
         fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
-        File file = fileChooser.showOpenDialog(stage);
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("MP4 video", "*.mp4"),
+                new FileChooser.ExtensionFilter("3GP video", "*.3gp"),
+                new FileChooser.ExtensionFilter("MKV video", "*.mkv")
+        );
+        return fileChooser.showOpenDialog(stage);
+    }
+
+    public static File openFile(Stage stage){
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Выберите файл для отправки");
+        fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+        return fileChooser.showOpenDialog(stage);
+    }
+
+    public static byte[] readBytes(File file){
         try {
-            return file == null ? null : new Pair<>(Files.readAllBytes(file.toPath()), file);
-        } catch (IOException e){
-            AlertHandler.makeError("Системная ошибка при чтении с файла", stage);
+           return Files.readAllBytes(file.toPath());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
-        return null;
     }
 
     public static void saveToFile(String filepath, byte[] fileByte) throws IOException {
