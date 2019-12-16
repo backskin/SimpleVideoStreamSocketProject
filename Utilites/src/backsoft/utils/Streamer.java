@@ -219,6 +219,7 @@ public class Streamer {
     }
 
     public void stopVideoStreaming(){
+        pauseFlag = true;
         System.out.println("client stopped stream");
         if (streamThread != null && streamThread.isAlive()) {
             streamThread.interrupt();

@@ -90,6 +90,12 @@ public class Controller {
     @FXML
     private Slider volumeSlider;
 
+    @FXML
+    void initialize(){
+        ipField.setText("172.17.2.239");
+        portField.setText("1234");
+    }
+
     private void connectToServer(String address, int port) {
 
         writeToConsole("Подключение к серверу\n" + address + ":" + port);
@@ -206,7 +212,8 @@ public class Controller {
     @FXML
     public void handleDisconnect() {
 
-        streamer.stopVideoStreaming();
+        if (streamer != null && clientThread != null && clientThread.isAlive())
+            streamer.stopVideoStreaming();
 
         try {
             if (clientThread != null && clientThread.isAlive())

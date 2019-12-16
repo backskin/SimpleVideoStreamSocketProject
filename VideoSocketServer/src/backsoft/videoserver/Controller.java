@@ -37,6 +37,7 @@ public class Controller {
     @FXML
     private void initialize(){
         clientsTable.getColumns().get(0).setCellValueFactory(new PropertyValueFactory<>("inetAddress"));
+        portField.setText("1234");
     }
 
     void putClientToTable(Socket client){
