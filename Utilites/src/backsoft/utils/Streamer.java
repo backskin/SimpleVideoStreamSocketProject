@@ -5,20 +5,20 @@ import javafx.scene.image.Image;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.videoio.VideoCapture;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferByte;
-import java.awt.image.WritableRaster;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static backsoft.utils.CommonPhrases.SIGNAL.*;
-import static backsoft.utils.CommonPhrases.byteFileSignal;
+import static backsoft.utils.CommonPhrases.imageSignal;
 import static backsoft.utils.CommonPhrases.videoSignal;
 import static org.opencv.videoio.Videoio.*;
 
@@ -35,8 +35,8 @@ public class Streamer {
         }
 
         public StreamerBuilder setVideoToStream(File videoToStream){
+            streamer.filePath = videoToStream.toPath();
             streamer.capture = new VideoCapture(videoToStream.getAbsolutePath());
-            streamer.frameRate = streamer.capture.get(CAP_PROP_FPS);
             streamer.framesAmount  = (long) streamer.capture.get(CAP_PROP_FRAME_COUNT);
             streamer.dataName = videoToStream.getName();
             return this;
@@ -58,15 +58,23 @@ public class Streamer {
         }
     }
 
-    public static byte[] readBytesFromBase64(String stopWord, DataInputStream in) throws IOException {
+    public static byte[] readBytesFromBase64(String haltWord, String stopWord, DataInputStream in) throws IOException {
 
-        ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        String utf = in.readUTF();
-        while (!utf.equals(stopWord)){
-            bout.write(Base64.getDecoder().decode(utf));
+        String utf = "";
+        try {
+            ByteArrayOutputStream bout = new ByteArrayOutputStream();
             utf = in.readUTF();
+            if (utf.equals(haltWord)) return null;
+            while (!utf.equals(stopWord)){
+                bout.write(Base64.getDecoder().decode(utf));
+                utf = in.readUTF();
+            }
+            return bout.toByteArray();
+        } catch (IllegalArgumentException iae){
+            System.out.println(utf);
+            System.out.println(in.available());
         }
-        return bout.toByteArray();
+      return null;
     }
 
     public void sendBytesByBase64(String stopWord, InputStream in, DataOutputStream out) throws IOException{
@@ -100,31 +108,46 @@ public class Streamer {
         return image == null ? null : SwingFXUtils.toFXImage(image, null);
     }
 
-    private static BufferedImage matToBufferedImage(Mat frame) {
-        int type = 0;
-        if (frame.channels() == 1) {
-            type = BufferedImage.TYPE_BYTE_GRAY;
-        } else if (frame.channels() == 3) {
-            type = BufferedImage.TYPE_3BYTE_BGR;
-        }
-        BufferedImage image = new BufferedImage(frame.width(), frame.height(), type);
-        WritableRaster raster = image.getRaster();
-        DataBufferByte dataBuffer = (DataBufferByte) raster.getDataBuffer();
-        byte[] data = dataBuffer.getData();
-        frame.get(0, 0, data);
-
-        return image;
+    static ByteArrayInputStream mat2BufferedImage(Mat image) {
+        MatOfByte mob = new MatOfByte();
+        Imgcodecs.imencode(".jpg", image, mob);
+        return new ByteArrayInputStream(mob.toArray());
     }
 
     private VideoCapture capture = null;
-    private double frameRate;
     private DataOutputStream outputStream = null;
     private String dataName;
     private Path filePath;
     private long framesAmount;
     private long counter = 0;
     Thread streamThread;
-    boolean pauseFlag = false;
+    AtomicBoolean pauseFlag = new AtomicBoolean(false);
+    Runnable streamRun = ()-> {
+        while (true) {
+            if (!pauseFlag.get()) {
+                try {
+                    if (counter < framesAmount) {
+                        if (pauseFlag.get()) continue;
+                        outputStream.writeUTF(videoSignal.get(PLAY));
+
+                        counter++;
+                        Mat frame = new Mat();
+                        capture.read(frame);
+                        if (pauseFlag.get()) continue;
+                        sendBytesByBase64(videoSignal.get(NEXT), mat2BufferedImage(frame), outputStream);
+
+                    } else {
+                        if (pauseFlag.get()) continue;
+                        outputStream.writeUTF(videoSignal.get(STOP));
+                        break;
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    };
+
 
     private Streamer(){}
 
@@ -132,16 +155,12 @@ public class Streamer {
     public void startFileStreaming(){
 
         try {
-            outputStream.writeUTF(byteFileSignal.get(START));
-            outputStream.flush();
+            outputStream.writeUTF(imageSignal.get(START));
             outputStream.writeUTF(dataName);
-            outputStream.flush();
-
             int fileHASH = Arrays.hashCode(Files.readAllBytes(filePath));
             outputStream.writeUTF(Integer.toString(fileHASH));
-            outputStream.flush();
 
-            sendBytesByBase64(byteFileSignal.get(STOP), Files.newInputStream(filePath), outputStream);
+            sendBytesByBase64(imageSignal.get(STOP), Files.newInputStream(filePath), outputStream);
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -149,59 +168,27 @@ public class Streamer {
     }
 
     public void startVideoStreaming(){
-        System.out.println("client streaming");
-        System.out.println("framerate = " + frameRate);
 
+        if (pauseFlag.get()){ pauseFlag.set(false);return;}
         try {
             outputStream.writeUTF(videoSignal.get(START));
             outputStream.writeUTF(dataName);
-
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-//        final int rate = (int) (1000.0 / (frameRate));
-
-        Runnable streamRun = ()-> {
-            while (true) {
-                try {
-                        if (!pauseFlag) {
-                            if (counter < framesAmount) {
-
-                                outputStream.writeUTF(videoSignal.get(PLAY));
-
-                                counter++;
-                                Mat frame = new Mat();
-                                capture.read(frame);
-                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                ImageIO.write(matToBufferedImage(frame), "jpg", baos);
-
-                                sendBytesByBase64(videoSignal.get(NEXT), new ByteArrayInputStream(baos.toByteArray()), outputStream);
-
-                            } else {
-                                outputStream.writeUTF(videoSignal.get(STOP));
-                                break;
-                            }
-//                            Thread.sleep(rate);
-                        }
-                    } catch(IOException e){
-                        e.printStackTrace();
-                    }
-            }
-        };
-
         streamThread = new Thread(streamRun);
         streamThread.start();
     }
 
     public void pauseVideoStreaming(){
         System.out.println("client pause stream");
-        pauseFlag = true;
+        pauseFlag.set(true);
     }
 
     public void stopVideoStreaming(){
-        pauseFlag = true;
+        pauseFlag.set(true);
         System.out.println("client stopped stream");
+        capture = new VideoCapture(filePath.toAbsolutePath().toString());
         if (streamThread != null && streamThread.isAlive()) {
             streamThread.interrupt();
             try {
@@ -210,5 +197,6 @@ public class Streamer {
                 e.printStackTrace();
             }
         }
+        pauseFlag.set(false);
     }
 }

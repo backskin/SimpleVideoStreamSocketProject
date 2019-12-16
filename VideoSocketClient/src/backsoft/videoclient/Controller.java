@@ -24,7 +24,7 @@ import javafx.scene.media.MediaView;
 import javafx.stage.Stage;
 
 import static backsoft.utils.CommonPhrases.SIGNAL.*;
-import static backsoft.utils.CommonPhrases.byteFileSignal;
+import static backsoft.utils.CommonPhrases.imageSignal;
 import static backsoft.utils.CommonPhrases.system;
 import static backsoft.utils.FileHandler.*;
 import static backsoft.utils.Streamer.convertToBuffImage;
@@ -136,8 +136,8 @@ public class Controller {
         videoPathField.setDisable(status);
         playPauseButton.setDisable(status);
         stopVideoButton.setDisable(status);
-
         imageView.setImage(null);
+        videoView.setMediaPlayer(null);
     }
 
     private void blockImageScreenWhileSending(boolean block){
@@ -175,19 +175,19 @@ public class Controller {
                     String response = in.readUTF();
                     if (response.equals(system.get(BYEBYE))) {
                         writeToConsole("Сервер отключил вас :(");
-                        in.close();
-                        handleDisconnect();
-                    }
-                    if (response.equals(byteFileSignal.get(CORRECT))) {
+                        break;
+                    } else if (response.equals(imageSignal.get(CORRECT))) {
                         blockImageScreenWhileSending(false);
                         writeToConsole("Сервер успешно получил изображение без потерь");
-                        AlertHandler.makeInfo(
-                                "Изображение успешно доставлено!", stage);
+                        AlertHandler.makeInfo("Изображение успешно доставлено!", stage);
                     }
                 }
+
+                closeStreamsAndThreads();
+                offlineMode(true);
+
             } catch (IOException e) {
                 Controller.this.writeToConsole("Связь с сервером прервана");
-                handleDisconnect();
             }
         };
 
@@ -209,23 +209,22 @@ public class Controller {
         }
     }
 
+    public void closeStreamsAndThreads() {
+        if (streamer != null) streamer.stopVideoStreaming();
+        if (clientThread != null && clientThread.isAlive())
+            clientThread.interrupt();
+    }
+
     @FXML
     public void handleDisconnect() {
 
-        if (streamer != null && clientThread != null && clientThread.isAlive())
-            streamer.stopVideoStreaming();
+        if (socket.isClosed()) return;
 
+        closeStreamsAndThreads();
         try {
-            if (clientThread != null && clientThread.isAlive())
-                clientThread.interrupt();
-
-            if (socket != null && !socket.isClosed() && socket.isConnected()) {
-
+            if (socket != null && !socket.isClosed()) {
                 DataOutputStream dout = new DataOutputStream(socket.getOutputStream());
                 dout.writeUTF(system.get(BYEBYE));
-                dout.flush();
-                socket.getOutputStream().close();
-                socket.close();
             }
             writeToConsole("Отключен от сервера");
         } catch (IOException e) {

@@ -2,18 +2,18 @@ package backsoft.videoserver;
 
 import backsoft.utils.*;
 import javafx.application.Platform;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-import java.awt.image.BufferedImage;
+import javax.imageio.ImageIO;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static backsoft.utils.CommonPhrases.*;
 import static backsoft.utils.CommonPhrases.SIGNAL.*;
@@ -74,12 +74,13 @@ public class ServerRunnable implements Runnable {
             streamWindow.setStatsLabel("Видеопоток - " + filename);
 
             while (in.readUTF().equals(videoSignal.get(PLAY))){
-                byte[] bytes = readBytesFromBase64(videoSignal.get(NEXT), in);
-                streamWindow.setStreamFrame(
-                        convertToFxImage(convertToBuffImage(bytes)));
+                byte[] bytes = readBytesFromBase64(videoSignal.get(STOP), videoSignal.get(NEXT), in);
+                if (bytes != null) {
+                    streamWindow.setStreamFrame(
+                            SwingFXUtils.toFXImage(
+                                    ImageIO.read(new ByteArrayInputStream(bytes)), null));
+                } else break;
             }
-
-
         }
 
         private void handleImageReceive() throws IOException {
@@ -92,19 +93,19 @@ public class ServerRunnable implements Runnable {
                     + clientSocket.getRemoteSocketAddress()
                     + " передаёт изображение " + filename);
 
-            byte[] bytes = Streamer.readBytesFromBase64(byteFileSignal.get(STOP), in);
+            byte[] bytes = Streamer.readBytesFromBase64(imageSignal.get(BYEBYE), imageSignal.get(STOP), in);
 
             controller.writeToConsole("От клиента "
                     + clientSocket.getRemoteSocketAddress()
                     + " получено изображение - " + filename);
 
             if (Arrays.hashCode(bytes) == imageHASH){
-                out.writeUTF(byteFileSignal.get(CORRECT));
+                out.writeUTF(imageSignal.get(CORRECT));
                 out.flush();
                 streamWindow.setStreamFrame(convertToFxImage(convertToBuffImage(bytes)));
                 controller.writeToConsole("файл " + filename + ": пришел без потерь");
             } else {
-                out.writeUTF(byteFileSignal.get(MISTAKE));
+                out.writeUTF(imageSignal.get(MISTAKE));
                 out.flush();
                 controller.writeToConsole(" пришел битым :(");
             }
@@ -125,21 +126,16 @@ public class ServerRunnable implements Runnable {
             while (!clientSocket.isClosed()) {
                 try {
                     String command = in.readUTF();
-                    if (command.equals(byteFileSignal.get(START))) handleImageReceive();
+                    if (command.equals(imageSignal.get(START))) handleImageReceive();
                     else if (command.equals(videoSignal.get(START))) handleVideoStreamReceive();
                     else if (command.equals(system.get(BYEBYE))) handleQuit();
                 } catch (SocketException | EOFException ignored) {
                 } catch (IOException e) {
-                    e.printStackTrace();
-                    try {
-                        clientSocket.close();
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
+                    removeClient(clientSocket);
                     AlertHandler.makeInfo(
                             "Ошибка при работе с клиентом " +
                                     clientSocket.getRemoteSocketAddress()+
-                                    ". Соединение остановлено.",
+                                    "\nСоединение остановлено.",
                             null);
                 }
             }
@@ -216,14 +212,14 @@ public class ServerRunnable implements Runnable {
 
         try {
             controller.removeClientFromTable(client);
-            if (!client.isClosed() && client.isConnected()) {
+            currentTasks.get(client).close();
+            if (!client.isClosed()) {
                 DataOutputStream out = new DataOutputStream(client.getOutputStream());
                 out.writeUTF(system.get(BYEBYE));
-                out.flush();
-                currentTasks.get(client).close();
-                controller.writeToConsole("Клиент " + client.getRemoteSocketAddress() + " отключён");
-                currentSockets.remove(client);
+                client.close();
             }
+            currentSockets.remove(client);
+            controller.writeToConsole("Клиент " + client.getRemoteSocketAddress() + " отключён");
         }catch (SocketException se){
             AlertHandler.makeError(
                     se.getLocalizedMessage()
@@ -238,5 +234,6 @@ public class ServerRunnable implements Runnable {
             currentThreads.get(client).interrupt();
 
         currentThreads.remove(client);
+
     }
 }
