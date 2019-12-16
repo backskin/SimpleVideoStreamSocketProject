@@ -15,23 +15,23 @@
    <Label layoutX="182.0" layoutY="53.0" text="Port" />
    <TextField fx:id="ipField" layoutX="24.0" layoutY="70.0" text="localhost" />
    <TextField fx:id="portField" layoutX="181.0" layoutY="70.0" prefHeight="25.0" prefWidth="76.0" text="12345" />
-   <Button fx:id="connectButton" defaultButton="true" layoutX="291.0" layoutY="52.0" mnemonicParsing="false" onAction="#handleConnect" prefHeight="25.0" prefWidth="130.0" text="Подключиться" />
-   <Button fx:id="disconnectButton" disable="true" layoutX="291.0" layoutY="79.0" mnemonicParsing="false" onAction="#handleDisconnect" prefHeight="25.0" prefWidth="130.0" text="Отключиться" />
-   <TextArea fx:id="consoleArea" editable="false" layoutX="170.0" layoutY="139.0" prefHeight="204.0" prefWidth="252.0" promptText="&gt; Console" />
+   <Button fx:id="connectButton" defaultButton="true" layoutX="287.0" layoutY="55.0" mnemonicParsing="false" onAction="#handleConnect" prefHeight="25.0" prefWidth="130.0" text="Подключиться" />
+   <Button fx:id="disconnectButton" disable="true" layoutX="287.0" layoutY="85.0" mnemonicParsing="false" onAction="#handleDisconnect" prefHeight="25.0" prefWidth="130.0" text="Отключиться" />
+   <TextArea fx:id="consoleArea" editable="false" layoutX="134.0" layoutY="136.0" prefHeight="213.0" prefWidth="306.0" promptText="&gt; Console" />
    <Label alignment="CENTER" layoutX="148.0" layoutY="5.0" prefHeight="17.0" prefWidth="149.0" text="Клиентос" textAlignment="CENTER">
       <font>
          <Font size="16.0" />
       </font>
    </Label>
    <Separator layoutY="29.0" prefHeight="17.0" prefWidth="452.0" />
-   <Button fx:id="photoButton" layoutX="16.0" layoutY="197.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handlePhotoButton" prefHeight="40.0" prefWidth="140.0" text="Отправка фото">
+   <Button fx:id="photoButton" layoutX="24.0" layoutY="136.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handlePhotoButton" prefHeight="65.0" prefWidth="96.0" text="Отправка фото" wrapText="true">
       <graphic>
          <ImageView fitHeight="20.0" fitWidth="30.0" opacity="0.69" pickOnBounds="true" preserveRatio="true">
-            <Image url="@resources/image-icon.png"/>
+            <Image url="@resources/image-icon.png" />
          </ImageView>
       </graphic>
    </Button>
-   <Button fx:id="videoButton" layoutX="16.0" layoutY="242.0" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handleVideoButton" prefHeight="40.0" prefWidth="140.0" text="Отправка видео">
+   <Button fx:id="videoButton" layoutX="24.0" layoutY="217.0" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" onAction="#handleVideoButton" prefHeight="65.0" prefWidth="96.0" text="Отправка видео" wrapText="true">
       <graphic>
          <ImageView fitHeight="20.0" fitWidth="30.0" opacity="0.7" pickOnBounds="true" preserveRatio="true">
             <Image url="@resources/video-icon.png" />

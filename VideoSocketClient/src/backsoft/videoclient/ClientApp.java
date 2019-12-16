@@ -17,6 +17,7 @@ public class ClientApp extends Application {
         Pair<Parent, Controller> fxmlData = Loader.loadFXML(this.getClass().getResource("mainWindow.fxml"));
         Scene mainScene = new Scene(fxmlData.getOne());
         fxmlData.getTwo().setStageAndScene(primaryStage, mainScene);
+        primaryStage.setOnShowing(event -> primaryStage.sizeToScene());
         primaryStage.setOnCloseRequest(event->{
             fxmlData.getTwo().handleDisconnect();
             System.exit(0);

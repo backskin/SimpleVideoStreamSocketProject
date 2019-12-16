@@ -90,7 +90,6 @@ public class Controller {
     @FXML
     private Button stopVideoButton;
 
-
     private void connectToServer(String address, int port) {
 
         writeToConsole("Подключение к серверу\n" + address + ":" + port);
@@ -240,6 +239,7 @@ public class Controller {
                                 )
                         )
                 );
+                videoPathField.setText(videoFile.getAbsolutePath());
 
             } catch (MalformedURLException e) {
                 e.printStackTrace();
@@ -256,12 +256,16 @@ public class Controller {
 
     @FXML
     private void handlePlayPause(){
-        System.out.println("test-playpause");
+        MediaPlayer.Status playerStatus = videoView.getMediaPlayer().getStatus();
+        if (playerStatus != MediaPlayer.Status.PLAYING)
+            videoView.getMediaPlayer().play();
+        else videoView.getMediaPlayer().pause();
     }
 
     @FXML
     private void handleStopVideo(){
-        System.out.println("test-stop");
+        if (videoView.getMediaPlayer().getStatus() != MediaPlayer.Status.STOPPED)
+            videoView.getMediaPlayer().stop();
     }
 
     @FXML
