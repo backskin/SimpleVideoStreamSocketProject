@@ -16,8 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import static backsoft.utils.CommonPhrases.SIGNAL.*;
 import static backsoft.utils.CommonPhrases.byteFileSignal;
@@ -138,7 +136,8 @@ public class Streamer {
     private Path filePath;
     private long framesAmount;
     private long counter = 0;
-    Timer timer = new Timer();
+    Thread streamThread;
+    boolean pauseFlag = false;
 
     private Streamer(){}
 
@@ -178,49 +177,48 @@ public class Streamer {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        TimerTask streamTask = new TimerTask() {
-            @Override
-            public void run() {
+        Runnable streamRun = ()-> {
+            while (true) {
                 try {
-                    if (counter < framesAmount) {
+                        if (!pauseFlag) {
+                            if (counter < framesAmount) {
+                                outputStream.writeUTF(videoSignal.get(PLAY));
+                                counter++;
+                                Mat frame = getNextFrame();
+                                MatOfByte bytes = new MatOfByte(frame.reshape(1,
+                                        frame.cols() * frame.rows() * frame.channels()));
+                                byte[] frameInBytes = bytes.toArray();
 
-                        outputStream.writeUTF(videoSignal.get(PLAY));
-                        counter++;
+                                sendBytesByBase64(videoSignal.get(NEXT), new ByteArrayInputStream(frameInBytes), outputStream);
+                                outputStream.writeUTF(Integer.toString(frame.cols()));
+                                outputStream.writeUTF(Integer.toString(frame.rows()));
+                            } else {
+                                outputStream.writeUTF(videoSignal.get(STOP));
+                                break;
+                            }
+                        }
 
-                        Mat frame = getNextFrame();
-                        MatOfByte bytes = new MatOfByte(frame.reshape(1,
-                                frame.cols() * frame.rows() * frame.channels()));
-                        byte[] frameInBytes = bytes.toArray();
-
-                        sendBytesByBase64(videoSignal.get(NEXT),new ByteArrayInputStream(frameInBytes), outputStream);
-                        outputStream.writeUTF(Integer.toString(frame.cols()));
-                        outputStream.writeUTF(Integer.toString(frame.rows()));
-                    } else {
-                        outputStream.writeUTF(videoSignal.get(STOP));
-                        cancel();
+                    } catch(IOException e){
+                        e.printStackTrace();
                     }
-
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
             }
         };
 
         int rate = (int) (1000.0 / (frameRate));
         System.out.println("RATE = " + rate);
-        timer.scheduleAtFixedRate(streamTask, 0, rate);
+        streamThread = new Thread(streamRun);
+        streamThread.start();
     }
 
     public void pauseVideoStreaming(){
         System.out.println("client pause stream");
-        timer.cancel();
-        timer = new Timer();
+        pauseFlag = true;
     }
 
     public void stopVideoStreaming(){
         System.out.println("client stopped stream");
-        timer.cancel();
-        timer = new Timer();
+        if (streamThread != null && streamThread.isAlive())
+            streamThread.interrupt();
         try {
             outputStream.writeUTF(videoSignal.get(STOP));
         } catch (IOException e) {

@@ -205,6 +205,8 @@ public class Controller {
     @FXML
     public void handleDisconnect() {
 
+        streamer.stopVideoStreaming();
+
         try {
             if (clientThread != null && clientThread.isAlive())
                 clientThread.interrupt();
