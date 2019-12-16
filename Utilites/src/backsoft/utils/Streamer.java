@@ -67,7 +67,7 @@ public class Streamer {
 
         MatOfByte matOfByte = new MatOfByte();
         matOfByte.fromArray(bytes);
-        Mat mat = matOfByte.reshape(3, new int[]{cols, rows});
+        Mat mat = matOfByte.reshape(3, new int[]{rows, cols});
         return matToBufferedImage(mat);
     }
 
@@ -132,7 +132,7 @@ public class Streamer {
     }
 
     private VideoCapture capture = null;
-    private double frameRate = 25;
+    private double frameRate;
     private DataOutputStream outputStream = null;
     private String dataName;
     private Path filePath;
@@ -170,13 +170,19 @@ public class Streamer {
     public void startVideoStreaming(){
         System.out.println("client streaming");
         System.out.println("framerate = " + frameRate);
+
+        try {
+            outputStream.writeUTF(videoSignal.get(START));
+
+            outputStream.writeUTF(dataName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         TimerTask streamTask = new TimerTask() {
             @Override
             public void run() {
                 try {
-                    outputStream.writeUTF(videoSignal.get(START));
-                    outputStream.writeUTF(dataName);
-                    if (counter < framesAmount ) {
+                    if (counter < framesAmount) {
 
                         outputStream.writeUTF(videoSignal.get(PLAY));
                         counter++;
@@ -200,7 +206,7 @@ public class Streamer {
             }
         };
 
-        int rate = (int) (1000.0 / frameRate);
+        int rate = (int) (1000.0 / (frameRate));
         System.out.println("RATE = " + rate);
         timer.scheduleAtFixedRate(streamTask, 0, rate);
     }
