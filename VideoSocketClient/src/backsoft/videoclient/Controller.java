@@ -218,7 +218,7 @@ public class Controller {
     @FXML
     public void handleDisconnect() {
 
-        if (socket.isClosed()) return;
+        if (socket == null || socket.isClosed()) return;
 
         closeStreamsAndThreads();
         try {
