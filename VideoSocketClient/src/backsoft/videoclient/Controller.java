@@ -7,17 +7,15 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Slider;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import java.io.*;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.Socket;
-import java.nio.file.Files;
 import java.rmi.UnknownHostException;
-import java.util.Arrays;
 
 import backsoft.utils.Pair;
 import javafx.scene.media.Media;
@@ -43,19 +41,17 @@ public class Controller {
     private Scene videoScene;
     private Scene imageScene;
 
-    private Pair<Double, Double> winSize = new Pair<>(.0,.0);
-
     private File videoFile;
 
     void setStageAndScene(Stage stage, Scene scene){
         this.stage = stage;
         mainScene = scene;
-        winSize = new Pair<>(mainScene.getHeight(), mainScene.getWidth());
         videoScene = new Scene(Loader.loadChildrenFXML(
                 this.getClass().getResource("videoWindow.fxml"), this));
 
         imageScene = new Scene(Loader.loadChildrenFXML(
                 this.getClass().getResource("imageWindow.fxml"), this));
+        offlineMode(true);
     }
 
     @FXML
@@ -84,11 +80,14 @@ public class Controller {
     private Button disconnectButton;
     @FXML
     private Button chooseImageButton;
-
+    @FXML
+    private Button chooseVideoButton;
     @FXML
     private Button playPauseButton;
     @FXML
     private Button stopVideoButton;
+    @FXML
+    private Slider volumeSlider;
 
     private void connectToServer(String address, int port) {
 
@@ -99,8 +98,7 @@ public class Controller {
                 socket.connect(new InetSocketAddress(address, port), 3500);
                 if (socket.isConnected()) {
                         writeToConsole("Соединение установлено!");
-                        disconnectButton.setDisable(false);
-                        if (imageFile != null) sendButton.setDisable(false);
+                        offlineMode(false);
                         startServerListener();
                 } else {
                     socket.close();
@@ -121,7 +119,21 @@ public class Controller {
         th.start();
     }
 
-    private void blockRightSide(boolean block){
+    private void offlineMode(boolean status){
+        connectButton.setDisable(!status);
+        disconnectButton.setDisable(status);
+        sendButton.setDisable(status);
+        chooseImageButton.setDisable(status);
+        chooseVideoButton.setDisable(status);
+        imagePathField.setDisable(status);
+        videoPathField.setDisable(status);
+        playPauseButton.setDisable(status);
+        stopVideoButton.setDisable(status);
+
+        imageView.setImage(null);
+    }
+
+    private void blockImageScreenWhileSending(boolean block){
         sendButton.setDisable(block);
         chooseImageButton.setDisable(block);
         imagePathField.setDisable(block);
@@ -129,12 +141,13 @@ public class Controller {
 
     private void sendImageToServer() {
 
-        Platform.runLater(()->blockRightSide(true));
+        Platform.runLater(()-> blockImageScreenWhileSending(true));
 
         writeToConsole("Отправление изображения на сервер...");
         Streamer.StreamerBuilder builder = new Streamer.StreamerBuilder();
         try {
             builder.setOutputStream(socket.getOutputStream())
+                    .setFileToStream(imageFile)
                     .build()
                     .startFileStream();
 
@@ -159,7 +172,7 @@ public class Controller {
                         handleDisconnect();
                     }
                     if (response.equals(byteFileSignal.get(CORRECT))) {
-                        blockRightSide(false);
+                        blockImageScreenWhileSending(false);
                         writeToConsole("Сервер успешно получил изображение без потерь");
                         AlertHandler.makeInfo(
                                 "Изображение успешно доставлено!", stage);
@@ -193,7 +206,6 @@ public class Controller {
     public void handleDisconnect() {
 
         try {
-
             if (clientThread != null && clientThread.isAlive())
                 clientThread.interrupt();
 
@@ -210,10 +222,7 @@ public class Controller {
             writeToConsole("Ошибка отсоединения:");
             writeToConsole(e.getLocalizedMessage());
         }
-        connectButton.setDisable(false);
-        disconnectButton.setDisable(true);
-        sendButton.setDisable(true);
-        chooseImageButton.setDisable(false);
+        offlineMode(true);
     }
 
     @FXML
@@ -239,9 +248,14 @@ public class Controller {
                                 )
                         )
                 );
+                videoView.getMediaPlayer().volumeProperty().bind(volumeSlider.valueProperty());
                 videoPathField.setText(videoFile.getAbsolutePath());
+                streamer = (new Streamer.StreamerBuilder())
+                        .setOutputStream(socket.getOutputStream())
+                        .setVideoToStream(videoFile)
+                        .build();
 
-            } catch (MalformedURLException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
@@ -257,36 +271,42 @@ public class Controller {
     @FXML
     private void handlePlayPause(){
         MediaPlayer.Status playerStatus = videoView.getMediaPlayer().getStatus();
-        if (playerStatus != MediaPlayer.Status.PLAYING)
+        if (playerStatus != MediaPlayer.Status.PLAYING) {
             videoView.getMediaPlayer().play();
-        else videoView.getMediaPlayer().pause();
+            streamer.startVideoStreaming();
+        }
+        else {
+            videoView.getMediaPlayer().pause();
+            streamer.pauseVideoStreaming();
+        }
     }
 
     @FXML
     private void handleStopVideo(){
-        if (videoView.getMediaPlayer().getStatus() != MediaPlayer.Status.STOPPED)
+        if (videoView.getMediaPlayer().getStatus() != MediaPlayer.Status.STOPPED) {
             videoView.getMediaPlayer().stop();
+            streamer.stopVideoStreaming();
+        }
     }
 
     @FXML
     public void handlePhotoButton() {
 
         stage.setScene(imageScene);
-        stage.setHeight(winSize.getOne());
-        stage.setWidth(winSize.getTwo());
+        stage.sizeToScene();
     }
 
     @FXML
     public void handleVideoButton() {
 
         stage.setScene(videoScene);
+        stage.sizeToScene();
     }
 
     @FXML
     public void handleBackToMain() {
 
         stage.setScene(mainScene);
-        stage.setHeight(winSize.getOne());
-        stage.setWidth(winSize.getTwo());
+        stage.sizeToScene();
     }
 }

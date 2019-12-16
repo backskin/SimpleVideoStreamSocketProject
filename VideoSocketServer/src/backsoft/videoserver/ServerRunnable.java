@@ -27,7 +27,7 @@ public class ServerRunnable implements Runnable {
     private ArrayList<Socket> currentSockets = new ArrayList<>();
     private Map<Socket, Thread> currentThreads = new HashMap<>();
     private Map<Socket, SocketTask> currentTasks = new HashMap<>();
-    int SERVER_TIMEOUT = 6000;
+    int SERVER_TIMEOUT = 5000;
 
     class SocketTask implements Runnable {
 
@@ -67,6 +67,7 @@ public class ServerRunnable implements Runnable {
                     + clientSocket.getRemoteSocketAddress()
                     + " передаёт видео...");
 
+
         }
 
         private void handleImageReceive() throws IOException {
@@ -88,7 +89,7 @@ public class ServerRunnable implements Runnable {
             if (Arrays.hashCode(bytes) == imageHASH){
                 out.writeUTF(byteFileSignal.get(CORRECT));
                 out.flush();
-                controller.writeToConsole("файл ё" + filename + ": пришел без потерь");
+                controller.writeToConsole("файл " + filename + ": пришел без потерь");
             } else {
                 out.writeUTF(byteFileSignal.get(MISTAKE));
                 out.flush();
@@ -167,7 +168,7 @@ public class ServerRunnable implements Runnable {
         try {
             serverSocket = new ServerSocket(port);
             serverSocket.setSoTimeout(SERVER_TIMEOUT);
-            controller.setServerWorking(true);
+            controller.handleServerStatus(true);
             controller.writeToConsole("Ожидание подключения новых клиентов...");
 
             while (!serverSocket.isClosed()) {
@@ -178,11 +179,12 @@ public class ServerRunnable implements Runnable {
         } catch (SocketException ignored) {
         } catch (SocketTimeoutException te){
             controller.writeToConsole("Время ожидания сервера ("+ SERVER_TIMEOUT/1000 +" сек) истекло");
+            stop();
         }
         catch (IOException e) {
             AlertHandler.makeError("Ошибка при работе сервера:\n"+e.getLocalizedMessage(), null);
         }
-        controller.setServerWorking(false);
+        controller.handleServerStatus(false);
     }
 
     private void addClient(Socket client) throws IOException {

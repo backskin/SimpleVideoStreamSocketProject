@@ -7,16 +7,23 @@ import java.nio.file.Files;
 
 public class FileHandler {
 
+    public static File lastDirectory = new File(System.getProperty("user.home"));
+
     public static File openVideoLink(Stage stage){
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Âûבונטעו גטהומפאיכ");
-        fileChooser.setInitialDirectory(new File(System.getProperty("user.home")));
+        fileChooser.setInitialDirectory(lastDirectory);
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("MP4 video", "*.mp4"),
                 new FileChooser.ExtensionFilter("3GP video", "*.3gp"),
                 new FileChooser.ExtensionFilter("MKV video", "*.mkv")
         );
-        return fileChooser.showOpenDialog(stage);
+        File out = fileChooser.showOpenDialog(stage);
+        if (out != null) {
+            lastDirectory = out.getParentFile();
+            return out;
+        }
+        return null;
     }
 
     public static File openFile(Stage stage){

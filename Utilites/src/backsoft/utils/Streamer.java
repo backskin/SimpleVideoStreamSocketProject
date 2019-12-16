@@ -2,6 +2,7 @@ package backsoft.utils;
 
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
 
@@ -21,6 +22,8 @@ import static org.opencv.videoio.Videoio.CAP_PROP_FPS;
 
 public class Streamer {
 
+    static{ System.loadLibrary(Core.NATIVE_LIBRARY_NAME); }
+
     public static class StreamerBuilder{
 
         private Streamer streamer;
@@ -30,11 +33,9 @@ public class Streamer {
         }
 
         public StreamerBuilder setVideoToStream(File videoToStream){
-            streamer.capture = new VideoCapture(
-                    videoToStream.getAbsolutePath()
-            );
-
+            streamer.capture = new VideoCapture(videoToStream.getAbsolutePath());
             streamer.frameRate = streamer.capture.get(CAP_PROP_FPS);
+            streamer.dataName = videoToStream.getName();
             return this;
         }
 
@@ -53,6 +54,8 @@ public class Streamer {
             return streamer;
         }
     }
+
+
 
     public static byte[] readBytesFromBase64(String stopWord, DataInputStream in, IntegerProperty chunks) throws IOException {
 
@@ -140,14 +143,14 @@ public class Streamer {
     }
 
     public void startVideoStreaming(){
-
+        System.out.println("client streaming");
     }
 
     public void pauseVideoStreaming(){
-
+        System.out.println("client pause stream");
     }
 
     public void stopVideoStreaming(){
-
+        System.out.println("client stopped stream");
     }
 }

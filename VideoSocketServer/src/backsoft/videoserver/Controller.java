@@ -54,11 +54,6 @@ public class Controller {
         Platform.runLater(()-> clientsTable.getItems().remove(client));
     }
 
-    void setServerWorking(boolean serverWorking) {
-        writeToConsole("Сервер " + (serverWorking ? "запущен!" : "остановлен"));
-        handleServerStatus(serverWorking);
-    }
-
     private void startServer(int port){
 
         runnable = new ServerRunnable(port,this);
@@ -70,10 +65,13 @@ public class Controller {
         Platform.runLater(()->consoleArea.appendText(data+"\n"));
     }
 
-    private synchronized void handleServerStatus(boolean enable){
+    public synchronized void handleServerStatus(boolean enable){
         Platform.runLater(()->{
+            writeToConsole("Сервер " + (enable ? "запущен!" : "остановлен"));
             closeButton.setDisable(!enable);
             openButton.setDisable(enable);});
+        if (serverThread!= null && serverThread.isAlive())
+            serverThread.interrupt();
     }
 
     @FXML
@@ -93,7 +91,6 @@ public class Controller {
             int port = Integer.parseInt(portField.getText());
             writeToConsole("Попытка открыть порт для прослушивания");
             startServer(port);
-            handleServerStatus(true);
 
         } catch (NumberFormatException e){
             makeError("Ошибка ввода (номер порта)!", stage);
