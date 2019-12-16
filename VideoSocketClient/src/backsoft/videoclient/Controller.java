@@ -92,7 +92,7 @@ public class Controller {
 
     @FXML
     void initialize(){
-        ipField.setText("172.17.2.239");
+//        ipField.setText("172.17.2.239");
         portField.setText("1234");
     }
 

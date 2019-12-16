@@ -200,9 +200,9 @@ public class Streamer {
                                 outputStream.writeUTF(videoSignal.get(STOP));
                                 break;
                             }
-                            Thread.sleep(rate);
+//                            Thread.sleep(rate);
                         }
-                    } catch(IOException | InterruptedException e){
+                    } catch(IOException e){
                         e.printStackTrace();
                     }
             }
