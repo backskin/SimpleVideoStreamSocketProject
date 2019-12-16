@@ -176,7 +176,7 @@ public class Streamer {
                 try {
                     outputStream.writeUTF(videoSignal.get(START));
                     outputStream.writeUTF(dataName);
-                    while (counter < framesAmount ) {
+                    if (counter < framesAmount ) {
 
                         outputStream.writeUTF(videoSignal.get(PLAY));
                         counter++;
@@ -189,17 +189,20 @@ public class Streamer {
                         sendBytesByBase64(videoSignal.get(NEXT),new ByteArrayInputStream(frameInBytes), outputStream);
                         outputStream.writeUTF(Integer.toString(frame.cols()));
                         outputStream.writeUTF(Integer.toString(frame.rows()));
+                    } else {
+                        outputStream.writeUTF(videoSignal.get(STOP));
+                        cancel();
                     }
-
-                    outputStream.writeUTF(videoSignal.get(STOP));
-                    cancel();
 
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         };
-        timer.scheduleAtFixedRate(streamTask, 0, (int) (1000.0 / frameRate));
+
+        int rate = (int) (1000.0 / frameRate);
+        System.out.println("RATE = " + rate);
+        timer.scheduleAtFixedRate(streamTask, 0, rate);
     }
 
     public void pauseVideoStreaming(){
