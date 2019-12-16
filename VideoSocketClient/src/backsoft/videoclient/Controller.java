@@ -258,6 +258,7 @@ public class Controller {
                                 )
                         )
                 );
+
                 videoView.getMediaPlayer().volumeProperty().bind(volumeSlider.valueProperty());
                 videoPathField.setText(videoFile.getAbsolutePath());
                 streamer = (new StreamerBuilder())

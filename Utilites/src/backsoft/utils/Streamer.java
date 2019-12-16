@@ -58,14 +58,6 @@ public class Streamer {
         }
     }
 
-    public static BufferedImage readAFrame(byte[] bytes, int cols, int rows) {
-
-        MatOfByte matOfByte = new MatOfByte();
-        matOfByte.fromArray(bytes);
-        Mat mat = matOfByte.reshape(3, new int[]{rows, cols});
-        return matToBufferedImage(mat);
-    }
-
     public static byte[] readBytesFromBase64(String stopWord, DataInputStream in) throws IOException {
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -79,19 +71,17 @@ public class Streamer {
 
     public void sendBytesByBase64(String stopWord, InputStream in, DataOutputStream out) throws IOException{
 
-        int chunkSize = 256;
-        while (in.available() != 0){
+        int chunkSize = 64;
+
+        while (true){
             byte[] chunk = new byte[chunkSize];
             int bytesRead = in.read(chunk);
-            String str;
+            if (bytesRead < 0) break;
             if (bytesRead != chunkSize)
                 chunk = Arrays.copyOf(chunk, bytesRead);
-            str = Base64.getEncoder().encodeToString(chunk);
-            out.writeUTF(str);
-            out.flush();
+            out.writeUTF(Base64.getEncoder().encodeToString(chunk));
         }
         out.writeUTF(stopWord);
-        out.flush();
     }
 
     public static BufferedImage convertToBuffImage(byte[] imageInByte){
@@ -138,11 +128,6 @@ public class Streamer {
 
     private Streamer(){}
 
-    private Mat getNextFrame(){
-        Mat mat = new Mat();
-        capture.read(mat);
-        return mat;
-    }
 
     public void startFileStreaming(){
 
@@ -170,15 +155,12 @@ public class Streamer {
         try {
             outputStream.writeUTF(videoSignal.get(START));
             outputStream.writeUTF(dataName);
-            outputStream.writeUTF(Integer.toString((int) capture.get(CAP_PROP_FRAME_WIDTH)));
-            outputStream.writeUTF(Integer.toString((int) capture.get(CAP_PROP_FRAME_HEIGHT)));
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-
-        final int rate = (int) (1000.0 / (frameRate));
+//        final int rate = (int) (1000.0 / (frameRate));
 
         Runnable streamRun = ()-> {
             while (true) {
@@ -189,12 +171,12 @@ public class Streamer {
                                 outputStream.writeUTF(videoSignal.get(PLAY));
 
                                 counter++;
-                                Mat frame = getNextFrame();
-                                MatOfByte bytes = new MatOfByte(frame.reshape(1,
-                                        frame.cols() * frame.rows() * frame.channels()));
-                                byte[] frameInBytes = bytes.toArray();
+                                Mat frame = new Mat();
+                                capture.read(frame);
+                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                ImageIO.write(matToBufferedImage(frame), "jpg", baos);
 
-                                sendBytesByBase64(videoSignal.get(NEXT), new ByteArrayInputStream(frameInBytes), outputStream);
+                                sendBytesByBase64(videoSignal.get(NEXT), new ByteArrayInputStream(baos.toByteArray()), outputStream);
 
                             } else {
                                 outputStream.writeUTF(videoSignal.get(STOP));
@@ -208,7 +190,6 @@ public class Streamer {
             }
         };
 
-        System.out.println("RATE = " + rate);
         streamThread = new Thread(streamRun);
         streamThread.start();
     }

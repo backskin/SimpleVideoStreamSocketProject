@@ -73,15 +73,10 @@ public class ServerRunnable implements Runnable {
 
             streamWindow.setStatsLabel("Видеопоток - " + filename);
 
-            int width = Integer.parseInt(in.readUTF());
-            int height = Integer.parseInt(in.readUTF());
-
             while (in.readUTF().equals(videoSignal.get(PLAY))){
-
                 byte[] bytes = readBytesFromBase64(videoSignal.get(NEXT), in);
-                streamWindow.setStreamFrame(convertToFxImage(
-                        readAFrame(bytes,width,height)
-                ));
+                streamWindow.setStreamFrame(
+                        convertToFxImage(convertToBuffImage(bytes)));
             }
 
 
